@@ -1,0 +1,139 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestiÃ³n de Proveedores - Sistema FerreterÃ­a</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="clientes.html"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li><a href="productos.html"><i class="fas fa-box"></i> Productos</a></li>
+                    <li><a href="stock.html"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li><a href="facturas.html"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li><a href="pedidos.html"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li><a href="empleados.html"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li><a href="proveedores.html" class="active"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li><a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li><a href="roles.html"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li><a href="horarios.html"><i class="fas fa-clock"></i> Horarios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>GestiÃ³n de Proveedores</h1>
+                <div class="user-menu">
+                    <span><i class="fas fa-user"></i> Admin</span>
+                    <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <h1>Proveedores</h1>
+                    <p>Administra la informaciÃ³n de tus proveedores</p>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Lista de Proveedores</h3>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchProveedores" placeholder="Buscar proveedores..." class="form-control" style="width: 300px;">
+                            <button class="btn btn-primary" onclick="openAddModal()">
+                                <i class="fas fa-plus"></i> Nuevo Proveedor
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="proveedoresTable"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="proveedorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nuevo Proveedor</h3>
+                <button class="modal-close" onclick="closeModal('proveedorModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="proveedorForm">
+                <input type="hidden" name="id">
+
+                <div class="form-group">
+                    <label for="nombreProveedor">Nombre de la Empresa *</label>
+                    <input type="text" id="nombreProveedor" name="nombreProveedor" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="direccion">DirecciÃ³n *</label>
+                    <input type="text" id="direccion" name="direccion" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="telefono">TelÃ©fono *</label>
+                    <input type="tel" id="telefono" name="telefono" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+
+                <div class="d-flex justify-between gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('proveedorModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewProveedorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalles del Proveedor</h3>
+                <button class="modal-close" onclick="closeModal('viewProveedorModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="proveedorDetails">
+            </div>
+            <div class="d-flex justify-between gap-2 mt-3">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('viewProveedorModal')">
+                    Cerrar
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning" onclick="viewOrders()">
+                        <i class="fas fa-shopping-cart"></i> Pedidos
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="editFromView()">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/proveedores.js"></script>
+</body>
+</html>
+

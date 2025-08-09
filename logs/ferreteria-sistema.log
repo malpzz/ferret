@@ -1,0 +1,595 @@
+2025-08-09 00:00:06 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing POST /register
+2025-08-09 00:00:06 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured POST /register
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG org.hibernate.SQL - 
+    /* <criteria> */ select
+        r1_0.IDROL,
+        r1_0.ACTIVO,
+        r1_0.DESCRIPCION,
+        r1_0.FECHA_CREACION,
+        r1_0.FECHA_MODIFICACION,
+        r1_0.NOMBRE 
+    from
+        ROLES r1_0 
+    where
+        r1_0.NOMBRE=?
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG org.hibernate.SQL - 
+    /* <criteria> */ select
+        u1_0.IDUSUARIO 
+    from
+        USUARIOS u1_0 
+    where
+        u1_0.NOMBREUSUARIO=? 
+    fetch
+        first ? rows only
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG org.hibernate.SQL - 
+    /* <criteria> */ select
+        u1_0.IDUSUARIO 
+    from
+        USUARIOS u1_0 
+    where
+        u1_0.EMAIL=? 
+    fetch
+        first ? rows only
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG org.hibernate.SQL - 
+    select
+        r1_0.IDROL,
+        r1_0.ACTIVO,
+        r1_0.DESCRIPCION,
+        r1_0.FECHA_CREACION,
+        r1_0.FECHA_MODIFICACION,
+        r1_0.NOMBRE 
+    from
+        ROLES r1_0 
+    where
+        r1_0.IDROL=?
+2025-08-09 00:00:07 [http-nio-8080-exec-3] DEBUG org.hibernate.SQL - 
+    /* insert for
+        com.ferreteria.sistema.entity.Usuario */insert 
+    into
+        USUARIOS (ACTIVO, APELLIDOS, CONTRASENA, EMAIL, FECHA_CREACION, FECHA_MODIFICACION, INTENTOS_FALLIDOS, NOMBRE, NOMBREUSUARIO, IDROL, TELEFONO, ULTIMO_ACCESO, IDUSUARIO) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, default)
+2025-08-09 00:00:16 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /login
+2025-08-09 00:00:16 [http-nio-8080-exec-4] DEBUG org.hibernate.SQL - 
+    /* <criteria> */ select
+        u1_0.IDUSUARIO,
+        u1_0.ACTIVO,
+        u1_0.APELLIDOS,
+        u1_0.CONTRASENA,
+        u1_0.EMAIL,
+        u1_0.FECHA_CREACION,
+        u1_0.FECHA_MODIFICACION,
+        u1_0.INTENTOS_FALLIDOS,
+        u1_0.NOMBRE,
+        u1_0.NOMBREUSUARIO,
+        u1_0.IDROL,
+        u1_0.TELEFONO,
+        u1_0.ULTIMO_ACCESO 
+    from
+        USUARIOS u1_0 
+    where
+        u1_0.NOMBREUSUARIO=? 
+        or u1_0.EMAIL=?
+2025-08-09 00:00:16 [http-nio-8080-exec-4] DEBUG org.hibernate.SQL - 
+    /* update
+        for com.ferreteria.sistema.entity.Usuario */update USUARIOS 
+    set
+        ACTIVO=?,
+        APELLIDOS=?,
+        CONTRASENA=?,
+        EMAIL=?,
+        FECHA_MODIFICACION=?,
+        INTENTOS_FALLIDOS=?,
+        NOMBRE=?,
+        NOMBREUSUARIO=?,
+        IDROL=?,
+        TELEFONO=?,
+        ULTIMO_ACCESO=? 
+    where
+        IDUSUARIO=?
+2025-08-09 00:00:17 [http-nio-8080-exec-4] ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [/ferreteria] threw exception
+org.hibernate.LazyInitializationException: could not initialize proxy [com.ferreteria.sistema.entity.Rol#2] - no Session
+	at org.hibernate.proxy.AbstractLazyInitializer.initialize(AbstractLazyInitializer.java:164)
+	at org.hibernate.proxy.AbstractLazyInitializer.getImplementation(AbstractLazyInitializer.java:310)
+	at org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor.intercept(ByteBuddyInterceptor.java:44)
+	at org.hibernate.proxy.ProxyConfiguration$InterceptorDispatcher.intercept(ProxyConfiguration.java:102)
+	at com.ferreteria.sistema.entity.Rol$HibernateProxy$7gIZkDQ4.getNombre(Unknown Source)
+	at com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal.getAuthorities(CustomUserDetailsService.java:71)
+	at com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal.getAuthorities(CustomUserDetailsService.java:57)
+	at org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider.createSuccessAuthentication(AbstractUserDetailsAuthenticationProvider.java:197)
+	at org.springframework.security.authentication.dao.DaoAuthenticationProvider.createSuccessAuthentication(DaoAuthenticationProvider.java:132)
+	at org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider.authenticate(AbstractUserDetailsAuthenticationProvider.java:168)
+	at org.springframework.security.authentication.ProviderManager.authenticate(ProviderManager.java:182)
+	at org.springframework.security.authentication.ObservationAuthenticationManager.lambda$authenticate$1(ObservationAuthenticationManager.java:54)
+	at io.micrometer.observation.Observation.observe(Observation.java:565)
+	at org.springframework.security.authentication.ObservationAuthenticationManager.authenticate(ObservationAuthenticationManager.java:53)
+	at org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.attemptAuthentication(UsernamePasswordAuthenticationFilter.java:85)
+	at org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter.doFilter(AbstractAuthenticationProcessingFilter.java:231)
+	at org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter.doFilter(AbstractAuthenticationProcessingFilter.java:221)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.csrf.CsrfFilter.doFilterInternal(CsrfFilter.java:131)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:323)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:224)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:109)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:340)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:391)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:896)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1744)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1191)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+	at java.base/java.lang.Thread.run(Thread.java:1447)
+2025-08-09 00:00:17 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing POST /error
+2025-08-09 00:00:17 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:00:17 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured POST /error
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /login
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG org.hibernate.SQL - 
+    /* <criteria> */ select
+        u1_0.IDUSUARIO,
+        u1_0.ACTIVO,
+        u1_0.APELLIDOS,
+        u1_0.CONTRASENA,
+        u1_0.EMAIL,
+        u1_0.FECHA_CREACION,
+        u1_0.FECHA_MODIFICACION,
+        u1_0.INTENTOS_FALLIDOS,
+        u1_0.NOMBRE,
+        u1_0.NOMBREUSUARIO,
+        u1_0.IDROL,
+        u1_0.TELEFONO,
+        u1_0.ULTIMO_ACCESO 
+    from
+        USUARIOS u1_0 
+    where
+        u1_0.NOMBREUSUARIO=? 
+        or u1_0.EMAIL=?
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG org.hibernate.SQL - 
+    /* update
+        for com.ferreteria.sistema.entity.Usuario */update USUARIOS 
+    set
+        ACTIVO=?,
+        APELLIDOS=?,
+        CONTRASENA=?,
+        EMAIL=?,
+        FECHA_MODIFICACION=?,
+        INTENTOS_FALLIDOS=?,
+        NOMBRE=?,
+        NOMBREUSUARIO=?,
+        IDROL=?,
+        TELEFONO=?,
+        ULTIMO_ACCESO=? 
+    where
+        IDUSUARIO=?
+2025-08-09 00:01:37 [http-nio-8080-exec-6] ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [/ferreteria] threw exception
+org.hibernate.LazyInitializationException: could not initialize proxy [com.ferreteria.sistema.entity.Rol#2] - no Session
+	at org.hibernate.proxy.AbstractLazyInitializer.initialize(AbstractLazyInitializer.java:164)
+	at org.hibernate.proxy.AbstractLazyInitializer.getImplementation(AbstractLazyInitializer.java:310)
+	at org.hibernate.proxy.pojo.bytebuddy.ByteBuddyInterceptor.intercept(ByteBuddyInterceptor.java:44)
+	at org.hibernate.proxy.ProxyConfiguration$InterceptorDispatcher.intercept(ProxyConfiguration.java:102)
+	at com.ferreteria.sistema.entity.Rol$HibernateProxy$7gIZkDQ4.getNombre(Unknown Source)
+	at com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal.getAuthorities(CustomUserDetailsService.java:71)
+	at com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal.getAuthorities(CustomUserDetailsService.java:57)
+	at org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider.createSuccessAuthentication(AbstractUserDetailsAuthenticationProvider.java:197)
+	at org.springframework.security.authentication.dao.DaoAuthenticationProvider.createSuccessAuthentication(DaoAuthenticationProvider.java:132)
+	at org.springframework.security.authentication.dao.AbstractUserDetailsAuthenticationProvider.authenticate(AbstractUserDetailsAuthenticationProvider.java:168)
+	at org.springframework.security.authentication.ProviderManager.authenticate(ProviderManager.java:182)
+	at org.springframework.security.authentication.ObservationAuthenticationManager.lambda$authenticate$1(ObservationAuthenticationManager.java:54)
+	at io.micrometer.observation.Observation.observe(Observation.java:565)
+	at org.springframework.security.authentication.ObservationAuthenticationManager.authenticate(ObservationAuthenticationManager.java:53)
+	at org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.attemptAuthentication(UsernamePasswordAuthenticationFilter.java:85)
+	at org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter.doFilter(AbstractAuthenticationProcessingFilter.java:231)
+	at org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter.doFilter(AbstractAuthenticationProcessingFilter.java:221)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:107)
+	at org.springframework.security.web.authentication.logout.LogoutFilter.doFilter(LogoutFilter.java:93)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.csrf.CsrfFilter.doFilterInternal(CsrfFilter.java:131)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.web.filter.CorsFilter.doFilterInternal(CorsFilter.java:91)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.header.HeaderWriterFilter.doHeadersAfter(HeaderWriterFilter.java:90)
+	at org.springframework.security.web.header.HeaderWriterFilter.doFilterInternal(HeaderWriterFilter.java:75)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:82)
+	at org.springframework.security.web.context.SecurityContextHolderFilter.doFilter(SecurityContextHolderFilter.java:69)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter.doFilterInternal(WebAsyncManagerIntegrationFilter.java:62)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:227)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.session.DisableEncodeUrlFilter.doFilterInternal(DisableEncodeUrlFilter.java:42)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.wrapFilter(ObservationFilterChainDecorator.java:240)
+	at org.springframework.security.web.ObservationFilterChainDecorator$AroundFilterObservation$SimpleAroundFilterObservation.lambda$wrap$0(ObservationFilterChainDecorator.java:323)
+	at org.springframework.security.web.ObservationFilterChainDecorator$ObservationFilter.doFilter(ObservationFilterChainDecorator.java:224)
+	at org.springframework.security.web.ObservationFilterChainDecorator$VirtualFilterChain.doFilter(ObservationFilterChainDecorator.java:137)
+	at org.springframework.security.web.FilterChainProxy.doFilterInternal(FilterChainProxy.java:233)
+	at org.springframework.security.web.FilterChainProxy.doFilter(FilterChainProxy.java:191)
+	at org.springframework.web.filter.DelegatingFilterProxy.invokeDelegate(DelegatingFilterProxy.java:352)
+	at org.springframework.web.filter.DelegatingFilterProxy.doFilter(DelegatingFilterProxy.java:268)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:109)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
+	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
+	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174)
+	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149)
+	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
+	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
+	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482)
+	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
+	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
+	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:340)
+	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:391)
+	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
+	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:896)
+	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1744)
+	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1191)
+	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
+	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+	at java.base/java.lang.Thread.run(Thread.java:1447)
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing POST /error
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:01:37 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured POST /error
+2025-08-09 00:01:40 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-09 00:01:40 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-08-09 00:01:40 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-08-09 00:01:44 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - Starting FerreteriaSistemaApplication using Java 24.0.2 with PID 14496 (C:\Users\malpi\OneDrive\Desktop\mockups\ferreteria-sistema\target\classes started by malpi in C:\Users\malpi\OneDrive\Desktop\mockups)
+2025-08-09 00:01:44 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - The following 2 profiles are active: "default", "@spring.profiles.active@"
+2025-08-09 00:01:44 [restartedMain] INFO  o.s.b.d.restart.ChangeableUrls - The Class-Path manifest attribute in C:\Users\malpi\.m2\repository\com\oracle\database\jdbc\ojdbc11\23.3.0.23.09\ojdbc11-23.3.0.23.09.jar referenced one or more files that do not exist: file:/C:/Users/malpi/.m2/repository/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/oraclepki.jar
+2025-08-09 00:01:44 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-08-09 00:01:44 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-08-09 00:01:46 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-09 00:01:46 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 75 ms. Found 5 JPA repository interfaces.
+2025-08-09 00:01:47 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-08-09 00:01:47 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-08-09 00:01:47 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-08-09 00:01:47 [restartedMain] INFO  o.a.c.c.C.[.[.[/ferreteria] - Initializing Spring embedded WebApplicationContext
+2025-08-09 00:01:47 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2947 ms
+2025-08-09 00:01:48 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-08-09 00:01:48 [restartedMain] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-08-09 00:01:48 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-08-09 00:01:48 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-09 00:01:48 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-08-09 00:01:49 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection oracle.jdbc.driver.T4CConnection@5b508fb5
+2025-08-09 00:01:49 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-08-09 00:01:49 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: OracleDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-08-09 00:01:50 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-08-09 00:01:50 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-09 00:01:50 [restartedMain] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-08-09 00:01:52 [restartedMain] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-08-09 00:01:53 [restartedMain] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@742f569b, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@79464485, org.springframework.security.web.context.SecurityContextHolderFilter@21277b8b, org.springframework.security.web.header.HeaderWriterFilter@513478d5, org.springframework.web.filter.CorsFilter@23c6709f, org.springframework.security.web.csrf.CsrfFilter@14f4cd45, org.springframework.security.web.authentication.logout.LogoutFilter@4e69b827, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@28105199, org.springframework.security.web.session.ConcurrentSessionFilter@77e10fd5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@374b1a33, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@3b6eb1db, org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter@1d66b736, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6f1f5f99, org.springframework.security.web.session.SessionManagementFilter@651ee833, org.springframework.security.web.access.ExceptionTranslationFilter@1c0e0c98, org.springframework.security.web.access.intercept.AuthorizationFilter@40fa95e6]
+2025-08-09 00:01:53 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2025-08-09 00:01:53 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/ferreteria'
+2025-08-09 00:01:53 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - Started FerreteriaSistemaApplication in 9.936 seconds (process running for 10.432)
+2025-08-09 00:02:01 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[.[.[/ferreteria] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-09 00:02:01 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-08-09 00:02:01 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-08-09 00:02:01 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing POST /login
+2025-08-09 00:02:01 [http-nio-8080-exec-1] WARN  o.s.w.s.h.HandlerMappingIntrospector - Cache miss for REQUEST dispatch to '/ferreteria/login' (previous null). Performing CorsConfiguration lookup. This is logged once only at WARN level, and every time at TRACE.
+2025-08-09 00:02:01 [http-nio-8080-exec-1] WARN  o.s.w.s.h.HandlerMappingIntrospector - Cache miss for REQUEST dispatch to '/ferreteria/login' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG org.hibernate.SQL - 
+    /* SELECT
+        u 
+    FROM
+        Usuario u 
+    JOIN
+        
+    FETCH
+        u.rol 
+    WHERE
+        u.nombreUsuario = :nombreUsuario 
+        OR u.email = :email */ select
+            u1_0.IDUSUARIO,
+            u1_0.ACTIVO,
+            u1_0.APELLIDOS,
+            u1_0.CONTRASENA,
+            u1_0.EMAIL,
+            u1_0.FECHA_CREACION,
+            u1_0.FECHA_MODIFICACION,
+            u1_0.INTENTOS_FALLIDOS,
+            u1_0.NOMBRE,
+            u1_0.NOMBREUSUARIO,
+            u1_0.IDROL,
+            r1_0.IDROL,
+            r1_0.ACTIVO,
+            r1_0.DESCRIPCION,
+            r1_0.FECHA_CREACION,
+            r1_0.FECHA_MODIFICACION,
+            r1_0.NOMBRE,
+            u1_0.TELEFONO,
+            u1_0.ULTIMO_ACCESO 
+        from
+            USUARIOS u1_0 
+        join
+            ROLES r1_0 
+                on r1_0.IDROL=u1_0.IDROL 
+        where
+            u1_0.NOMBREUSUARIO=? 
+            or u1_0.EMAIL=?
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.s.ChangeSessionIdAuthenticationStrategy - Changed session id from 5C9153127D394F0AE6728BBDD013D565
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.c.session.SessionRegistryImpl - Registering session 78560B34E61A82CFAC7FE0A6EE3800E2, for principal com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.CsrfAuthenticationStrategy - Replaced CSRF Token
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Stored SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]] to HttpSession [org.apache.catalina.session.StandardSessionFacade@52b4e488]
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.UsernamePasswordAuthenticationFilter - Set SecurityContextHolder to UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.r.TokenBasedRememberMeServices - Did not send remember-me cookie (principal did not set parameter 'remember-me')
+2025-08-09 00:02:02 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.r.TokenBasedRememberMeServices - Remember-me login not requested.
+2025-08-09 00:02:02 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /dashboard
+2025-08-09 00:02:02 [http-nio-8080-exec-2] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:02:02 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:02:02 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Secured GET /dashboard
+2025-08-09 00:02:06 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /clientes
+2025-08-09 00:02:06 [http-nio-8080-exec-3] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:02:06 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:02:06 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /clientes
+2025-08-09 00:02:12 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Securing GET /facturas
+2025-08-09 00:02:12 [http-nio-8080-exec-7] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:02:12 [http-nio-8080-exec-7] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5e5bfbf2, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=5C9153127D394F0AE6728BBDD013D565], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:02:12 [http-nio-8080-exec-7] DEBUG o.s.security.web.FilterChainProxy - Secured GET /facturas
+2025-08-09 00:09:26 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-09 00:09:26 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-08-09 00:09:26 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-08-09 00:09:29 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - Starting FerreteriaSistemaApplication using Java 24.0.2 with PID 10904 (C:\Users\malpi\OneDrive\Desktop\mockups\ferreteria-sistema\target\classes started by malpi in C:\Users\malpi\OneDrive\Desktop\mockups)
+2025-08-09 00:09:29 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - The following 2 profiles are active: "default", "@spring.profiles.active@"
+2025-08-09 00:09:29 [restartedMain] INFO  o.s.b.d.restart.ChangeableUrls - The Class-Path manifest attribute in C:\Users\malpi\.m2\repository\com\oracle\database\jdbc\ojdbc11\23.3.0.23.09\ojdbc11-23.3.0.23.09.jar referenced one or more files that do not exist: file:/C:/Users/malpi/.m2/repository/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/oraclepki.jar
+2025-08-09 00:09:29 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2025-08-09 00:09:29 [restartedMain] INFO  o.s.b.d.e.DevToolsPropertyDefaultsPostProcessor - For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2025-08-09 00:09:32 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-08-09 00:09:32 [restartedMain] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 135 ms. Found 5 JPA repository interfaces.
+2025-08-09 00:09:34 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2025-08-09 00:09:34 [restartedMain] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-08-09 00:09:34 [restartedMain] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.16]
+2025-08-09 00:09:34 [restartedMain] INFO  o.a.c.c.C.[.[.[/ferreteria] - Initializing Spring embedded WebApplicationContext
+2025-08-09 00:09:34 [restartedMain] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4688 ms
+2025-08-09 00:09:34 [restartedMain] WARN  o.a.c.c.C.[.[.[/ferreteria] - Cannot deserialize session attribute [SPRING_SECURITY_CONTEXT] for session [78560B34E61A82CFAC7FE0A6EE3800E2]
+2025-08-09 00:09:34 [restartedMain] ERROR o.a.catalina.session.StandardManager - Exception loading sessions from persistent storage
+java.lang.ClassCastException: class java.io.ObjectStreamClass cannot be cast to class java.lang.String (java.io.ObjectStreamClass and java.lang.String are in module java.base of loader 'bootstrap')
+	at java.base/java.io.ObjectInputStream.readTypeString(ObjectInputStream.java:1730)
+	at java.base/java.io.ObjectStreamClass.readNonProxy(ObjectStreamClass.java:606)
+	at java.base/java.io.ObjectInputStream.readClassDescriptor(ObjectInputStream.java:941)
+	at java.base/java.io.ObjectInputStream.readNonProxyDesc(ObjectInputStream.java:1935)
+	at java.base/java.io.ObjectInputStream.readClassDesc(ObjectInputStream.java:1818)
+	at java.base/java.io.ObjectInputStream.readOrdinaryObject(ObjectInputStream.java:2134)
+	at java.base/java.io.ObjectInputStream.readObject0(ObjectInputStream.java:1653)
+	at java.base/java.io.ObjectInputStream.readObject(ObjectInputStream.java:495)
+	at java.base/java.io.ObjectInputStream.readObject(ObjectInputStream.java:453)
+	at org.apache.catalina.session.StandardSession.doReadObject(StandardSession.java:1415)
+	at org.apache.catalina.session.StandardSession.readObjectData(StandardSession.java:985)
+	at org.apache.catalina.session.StandardManager.doLoad(StandardManager.java:210)
+	at org.apache.catalina.session.StandardManager.load(StandardManager.java:156)
+	at org.apache.catalina.session.StandardManager.startInternal(StandardManager.java:346)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.core.StandardContext.startInternal(StandardContext.java:4877)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1332)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1322)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at org.apache.tomcat.util.threads.InlineExecutorService.execute(InlineExecutorService.java:75)
+	at java.base/java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:148)
+	at org.apache.catalina.core.ContainerBase.startInternal(ContainerBase.java:866)
+	at org.apache.catalina.core.StandardHost.startInternal(StandardHost.java:845)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1332)
+	at org.apache.catalina.core.ContainerBase$StartChild.call(ContainerBase.java:1322)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:328)
+	at org.apache.tomcat.util.threads.InlineExecutorService.execute(InlineExecutorService.java:75)
+	at java.base/java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:148)
+	at org.apache.catalina.core.ContainerBase.startInternal(ContainerBase.java:866)
+	at org.apache.catalina.core.StandardEngine.startInternal(StandardEngine.java:240)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.core.StandardService.startInternal(StandardService.java:433)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.core.StandardServer.startInternal(StandardServer.java:917)
+	at org.apache.catalina.util.LifecycleBase.start(LifecycleBase.java:171)
+	at org.apache.catalina.startup.Tomcat.start(Tomcat.java:488)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.initialize(TomcatWebServer.java:123)
+	at org.springframework.boot.web.embedded.tomcat.TomcatWebServer.<init>(TomcatWebServer.java:104)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getTomcatWebServer(TomcatServletWebServerFactory.java:501)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:218)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:188)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:162)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:610)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:753)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:455)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:323)
+	at com.ferreteria.sistema.FerreteriaSistemaApplication.main(FerreteriaSistemaApplication.java:54)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.springframework.boot.devtools.restart.RestartLauncher.run(RestartLauncher.java:50)
+2025-08-09 00:09:35 [restartedMain] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-08-09 00:09:35 [restartedMain] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.3.1.Final
+2025-08-09 00:09:35 [restartedMain] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-08-09 00:09:36 [restartedMain] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-08-09 00:09:36 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-08-09 00:09:37 [restartedMain] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection oracle.jdbc.driver.T4CConnection@47bb83e8
+2025-08-09 00:09:37 [restartedMain] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-08-09 00:09:37 [restartedMain] WARN  org.hibernate.orm.deprecation - HHH90000025: OracleDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-08-09 00:09:39 [restartedMain] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-08-09 00:09:39 [restartedMain] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-08-09 00:09:40 [restartedMain] INFO  o.s.d.j.r.query.QueryEnhancerFactory - Hibernate is in classpath; If applicable, HQL parser will be used.
+2025-08-09 00:09:43 [restartedMain] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 4 endpoint(s) beneath base path '/actuator'
+2025-08-09 00:09:44 [restartedMain] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@68e62c7f, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@36d46e84, org.springframework.security.web.context.SecurityContextHolderFilter@3c687c25, org.springframework.security.web.header.HeaderWriterFilter@409ffc04, org.springframework.web.filter.CorsFilter@2db57700, org.springframework.security.web.csrf.CsrfFilter@4d357b61, org.springframework.security.web.authentication.logout.LogoutFilter@b5f91ea, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter@98b5460, org.springframework.security.web.session.ConcurrentSessionFilter@3ffc553c, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4eec81d3, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@588a5a4f, org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter@42a69b5d, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@10a7c3ff, org.springframework.security.web.session.SessionManagementFilter@23031dfa, org.springframework.security.web.access.ExceptionTranslationFilter@1a9f553e, org.springframework.security.web.access.intercept.AuthorizationFilter@421dd7b8]
+2025-08-09 00:09:45 [restartedMain] INFO  o.s.b.d.a.OptionalLiveReloadServer - LiveReload server is running on port 35729
+2025-08-09 00:09:45 [restartedMain] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/ferreteria'
+2025-08-09 00:09:45 [restartedMain] INFO  c.f.s.FerreteriaSistemaApplication - Started FerreteriaSistemaApplication in 16.631 seconds (process running for 17.428)
+2025-08-09 00:09:48 [http-nio-8080-exec-1] INFO  o.a.c.c.C.[.[.[/ferreteria] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-08-09 00:09:48 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-08-09 00:09:48 [http-nio-8080-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 6 ms
+2025-08-09 00:09:48 [http-nio-8080-exec-1] DEBUG o.s.security.web.FilterChainProxy - Securing GET /facturas
+2025-08-09 00:09:48 [http-nio-8080-exec-1] WARN  o.s.w.s.h.HandlerMappingIntrospector - Cache miss for REQUEST dispatch to '/ferreteria/facturas' (previous null). Performing CorsConfiguration lookup. This is logged once only at WARN level, and every time at TRACE.
+2025-08-09 00:09:48 [http-nio-8080-exec-1] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:09:48 [http-nio-8080-exec-1] DEBUG o.s.s.w.s.SessionManagementFilter - Request requested invalid session id 78560B34E61A82CFAC7FE0A6EE3800E2
+2025-08-09 00:09:48 [http-nio-8080-exec-1] WARN  o.s.w.s.h.HandlerMappingIntrospector - Cache miss for REQUEST dispatch to '/ferreteria/facturas' (previous null). Performing MatchableHandlerMapping lookup. This is logged once only at WARN level, and every time at TRACE.
+2025-08-09 00:09:48 [http-nio-8080-exec-1] DEBUG o.s.s.w.s.HttpSessionRequestCache - Saved request http://localhost:8080/ferreteria/facturas?continue to session
+2025-08-09 00:09:48 [http-nio-8080-exec-1] DEBUG o.s.s.web.DefaultRedirectStrategy - Redirecting to http://localhost:8080/ferreteria/login
+2025-08-09 00:09:49 [http-nio-8080-exec-2] DEBUG o.s.security.web.FilterChainProxy - Securing GET /facturas
+2025-08-09 00:09:49 [http-nio-8080-exec-2] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:09:49 [http-nio-8080-exec-2] DEBUG o.s.s.w.s.SessionManagementFilter - Request requested invalid session id 78560B34E61A82CFAC7FE0A6EE3800E2
+2025-08-09 00:09:49 [http-nio-8080-exec-2] DEBUG o.s.s.w.s.HttpSessionRequestCache - Saved request http://localhost:8080/ferreteria/facturas?continue to session
+2025-08-09 00:09:49 [http-nio-8080-exec-2] DEBUG o.s.s.web.DefaultRedirectStrategy - Redirecting to http://localhost:8080/ferreteria/login
+2025-08-09 00:09:49 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Securing GET /login
+2025-08-09 00:09:49 [http-nio-8080-exec-3] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:09:49 [http-nio-8080-exec-3] DEBUG o.s.security.web.FilterChainProxy - Secured GET /login
+2025-08-09 00:09:50 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Securing GET /css/styles-dc2a00a960b7fab674b5f53b4710bf60.css
+2025-08-09 00:09:50 [http-nio-8080-exec-4] DEBUG o.s.s.w.a.AnonymousAuthenticationFilter - Set SecurityContextHolder to anonymous SecurityContext
+2025-08-09 00:09:50 [http-nio-8080-exec-4] DEBUG o.s.security.web.FilterChainProxy - Secured GET /css/styles-dc2a00a960b7fab674b5f53b4710bf60.css
+2025-08-09 00:09:58 [http-nio-8080-exec-5] DEBUG o.s.security.web.FilterChainProxy - Securing POST /login
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG org.hibernate.SQL - 
+    /* SELECT
+        u 
+    FROM
+        Usuario u 
+    JOIN
+        
+    FETCH
+        u.rol 
+    WHERE
+        u.nombreUsuario = :nombreUsuario 
+        OR u.email = :email */ select
+            u1_0.IDUSUARIO,
+            u1_0.ACTIVO,
+            u1_0.APELLIDOS,
+            u1_0.CONTRASENA,
+            u1_0.EMAIL,
+            u1_0.FECHA_CREACION,
+            u1_0.FECHA_MODIFICACION,
+            u1_0.INTENTOS_FALLIDOS,
+            u1_0.NOMBRE,
+            u1_0.NOMBREUSUARIO,
+            u1_0.IDROL,
+            r1_0.IDROL,
+            r1_0.ACTIVO,
+            r1_0.DESCRIPCION,
+            r1_0.FECHA_CREACION,
+            r1_0.FECHA_MODIFICACION,
+            r1_0.NOMBRE,
+            u1_0.TELEFONO,
+            u1_0.ULTIMO_ACCESO 
+        from
+            USUARIOS u1_0 
+        join
+            ROLES r1_0 
+                on r1_0.IDROL=u1_0.IDROL 
+        where
+            u1_0.NOMBREUSUARIO=? 
+            or u1_0.EMAIL=?
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.a.d.DaoAuthenticationProvider - Authenticated user
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.s.ChangeSessionIdAuthenticationStrategy - Changed session id from 04F9FE0EE84F7569F37680E0DFCBC775
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.c.session.SessionRegistryImpl - Registering session 0958506CF7846F1B3EDADBB62CE91473, for principal com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.CsrfAuthenticationStrategy - Replaced CSRF Token
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Stored SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]] to HttpSession [org.apache.catalina.session.StandardSessionFacade@6bca541c]
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.UsernamePasswordAuthenticationFilter - Set SecurityContextHolder to UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.r.TokenBasedRememberMeServices - Did not send remember-me cookie (principal did not set parameter 'remember-me')
+2025-08-09 00:09:59 [http-nio-8080-exec-5] DEBUG o.s.s.w.a.r.TokenBasedRememberMeServices - Remember-me login not requested.
+2025-08-09 00:09:59 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Securing GET /dashboard
+2025-08-09 00:09:59 [http-nio-8080-exec-6] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:09:59 [http-nio-8080-exec-6] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:09:59 [http-nio-8080-exec-6] DEBUG o.s.security.web.FilterChainProxy - Secured GET /dashboard
+2025-08-09 00:09:59 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Securing GET /js/dashboard-d8124ece79421192b3b5c1c7aaf2228f.js
+2025-08-09 00:09:59 [http-nio-8080-exec-9] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:09:59 [http-nio-8080-exec-9] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:09:59 [http-nio-8080-exec-9] DEBUG o.s.security.web.FilterChainProxy - Secured GET /js/dashboard-d8124ece79421192b3b5c1c7aaf2228f.js
+2025-08-09 00:10:06 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Securing GET /clientes
+2025-08-09 00:10:06 [http-nio-8080-exec-8] DEBUG o.s.s.w.c.HttpSessionSecurityContextRepository - Retrieved SecurityContextImpl [Authentication=UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]]
+2025-08-09 00:10:06 [http-nio-8080-exec-8] DEBUG o.s.s.w.a.r.RememberMeAuthenticationFilter - SecurityContextHolder not populated with remember-me token, as it already contained: 'UsernamePasswordAuthenticationToken [Principal=com.ferreteria.sistema.service.CustomUserDetailsService$CustomUserPrincipal@5f4b47cc, Credentials=[PROTECTED], Authenticated=true, Details=WebAuthenticationDetails [RemoteIpAddress=0:0:0:0:0:0:0:1, SessionId=04F9FE0EE84F7569F37680E0DFCBC775], Granted Authorities=[ROLE_VENDEDOR]]'
+2025-08-09 00:10:06 [http-nio-8080-exec-8] DEBUG o.s.security.web.FilterChainProxy - Secured GET /clientes
+2025-08-09 00:10:51 [SpringApplicationShutdownHook] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+2025-08-09 00:10:51 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-08-09 00:10:51 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

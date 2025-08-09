@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema FerreterÃ­a - Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a th:href="@{/dashboard}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a th:href="@{/clientes}"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li><a th:href="@{/productos}"><i class="fas fa-box"></i> Productos</a></li>
+                    <li><a th:href="@{/stock}"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li><a th:href="@{/facturas}"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li><a th:href="@{/pedidos}"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li><a th:href="@{/empleados}"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li><a th:href="@{/proveedores}"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li><a th:href="@{/usuarios}"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li><a th:href="@{/roles}"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li><a th:href="@{/horarios}"><i class="fas fa-clock"></i> Horarios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>Dashboard Principal</h1>
+                <div class="user-menu">
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
+                    <form th:action="@{/logout}" method="post" style="display:inline">
+                        <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                    </form>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalClientes">0</h3>
+                            <p>Total Clientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalProductos">0</h3>
+                            <p>Total Productos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalFacturas">0</h3>
+                            <p>Facturas del Mes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="ventasTotal">$0</h3>
+                            <p>Ventas del Mes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h2>Acciones RÃ¡pidas</h2>
+                    <div class="actions-grid">
+                        <a th:href="@{/clientes}" class="action-card">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Nuevo Cliente</span>
+                        </a>
+                        <a th:href="@{/productos}" class="action-card">
+                            <i class="fas fa-plus"></i>
+                            <span>Nuevo Producto</span>
+                        </a>
+                        <a th:href="@{/facturas}" class="action-card">
+                            <i class="fas fa-file-plus"></i>
+                            <span>Nueva Factura</span>
+                        </a>
+                        <a th:href="@{/stock}" class="action-card">
+                            <i class="fas fa-warehouse"></i>
+                            <span>Gestionar Stock</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="recent-activity">
+                    <h2>Actividad Reciente</h2>
+                    <div class="activity-list" id="activityList"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script th:src="@{/js/dashboard.js}"></script>
+</body>
+</html>
+
+

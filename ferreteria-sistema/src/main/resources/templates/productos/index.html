@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestiÃ³n de Productos - Sistema FerreterÃ­a</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="clientes.html"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li><a href="productos.html" class="active"><i class="fas fa-box"></i> Productos</a></li>
+                    <li><a href="stock.html"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li><a href="facturas.html"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li><a href="pedidos.html"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li><a href="empleados.html"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li><a href="proveedores.html"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li><a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li><a href="roles.html"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li><a href="horarios.html"><i class="fas fa-clock"></i> Horarios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>GestiÃ³n de Productos</h1>
+                <div class="user-menu">
+                    <span><i class="fas fa-user"></i> Admin</span>
+                    <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <h1>Productos</h1>
+                    <p>Administra el catÃ¡logo de productos de tu ferreterÃ­a</p>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Lista de Productos</h3>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchProductos" placeholder="Buscar productos..." class="form-control" style="width: 300px;">
+                            <button class="btn btn-primary" onclick="openAddModal()">
+                                <i class="fas fa-plus"></i> Nuevo Producto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="productosTable"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="productoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nuevo Producto</h3>
+                <button class="modal-close" onclick="closeModal('productoModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="productoForm">
+                <input type="hidden" name="id">
+
+                <div class="form-group">
+                    <label for="nombreProducto">Nombre del Producto *</label>
+                    <input type="text" id="nombreProducto" name="nombreProducto" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcion">DescripciÃ³n *</label>
+                    <textarea id="descripcion" name="descripcion" class="form-control" rows="3" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="precio">Precio *</label>
+                    <div class="input-group">
+                        <span class="input-prefix">$</span>
+                        <input type="number" id="precio" name="precio" class="form-control" step="0.01" min="0" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="IdProveedor">Proveedor *</label>
+                    <select id="IdProveedor" name="IdProveedor" class="form-control" required>
+                        <option value="">Seleccione un proveedor</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-between gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('productoModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewProductoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalles del Producto</h3>
+                <button class="modal-close" onclick="closeModal('viewProductoModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="productoDetails">
+            </div>
+            <div class="d-flex justify-between gap-2 mt-3">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('viewProductoModal')">
+                    Cerrar
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-warning" onclick="manageStock()">
+                        <i class="fas fa-warehouse"></i> Stock
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="editFromView()">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        .input-prefix {
+            background: #f8f9fa;
+            border: 2px solid #e1e8ed;
+            border-right: none;
+            padding: 12px;
+            border-radius: 8px 0 0 8px;
+            font-weight: 500;
+        }
+        .input-group .form-control {
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/productos.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,408 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GestiÃ³n de Horarios - Sistema FerreterÃ­a</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li><a href="clientes.html"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li><a href="productos.html"><i class="fas fa-box"></i> Productos</a></li>
+                    <li><a href="stock.html"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li><a href="facturas.html"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li><a href="pedidos.html"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li><a href="empleados.html"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li><a href="proveedores.html"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li><a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li><a href="roles.html"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li><a href="horarios.html" class="active"><i class="fas fa-clock"></i> Horarios</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <h1>GestiÃ³n de Horarios</h1>
+                <div class="user-menu">
+                    <span><i class="fas fa-user"></i> Admin</span>
+                    <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="page-header">
+                    <h1>Horarios de Empleados</h1>
+                    <p>Administra los horarios de trabajo del personal</p>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3>Vista Semanal</h3>
+                        <div class="d-flex gap-2">
+                            <select id="employeeFilter" class="form-control" style="width: 200px;">
+                                <option value="">Todos los empleados</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="openAddModal()">
+                                <i class="fas fa-plus"></i> Nuevo Horario
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="scheduleCalendar" class="schedule-calendar">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card mt-4">
+                    <div class="card-header">
+                        <h3>Lista de Horarios</h3>
+                        <div class="d-flex gap-2">
+                            <select id="statusFilter" class="form-control" style="width: 150px;">
+                                <option value="">Todos los estados</option>
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                            <input type="text" id="searchHorarios" placeholder="Buscar horarios..." class="form-control" style="width: 300px;">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="horariosTable"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="horarioModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Nuevo Horario</h3>
+                <button class="modal-close" onclick="closeModal('horarioModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="horarioForm">
+                <input type="hidden" name="id">
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="idEmpleado">Empleado *</label>
+                        <select id="idEmpleado" name="idEmpleado" class="form-control" required>
+                            <option value="">Seleccione un empleado</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="fechaInicio">Fecha de Inicio *</label>
+                        <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" required>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label for="fechaFin">Fecha de Fin</label>
+                        <input type="date" id="fechaFin" name="fechaFin" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="tipoTurno">Tipo de Turno *</label>
+                        <select id="tipoTurno" name="tipoTurno" class="form-control" required>
+                            <option value="completo">Tiempo Completo</option>
+                            <option value="parcial">Tiempo Parcial</option>
+                            <option value="rotativo">Rotativo</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="horasSemanales">Horas Semanales</label>
+                        <input type="number" id="horasSemanales" name="horasSemanales" class="form-control" min="1" max="60" step="0.5">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label for="estado">Estado *</label>
+                        <select id="estado" name="estado" class="form-control" required>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Horarios por DÃ­a de la Semana</label>
+                    <div class="schedule-days">
+                        <div class="day-schedule" data-day="lunes">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="lunes">
+                                    <strong>Lunes</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="lunes_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="lunes_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="lunes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="lunes_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="martes">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="martes">
+                                    <strong>Martes</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="martes_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="martes_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="martes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="martes_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="miercoles">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="miercoles">
+                                    <strong>MiÃ©rcoles</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="miercoles_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="miercoles_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="miercoles_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="miercoles_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="jueves">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="jueves">
+                                    <strong>Jueves</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="jueves_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="jueves_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="jueves_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="jueves_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="viernes">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="viernes">
+                                    <strong>Viernes</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="viernes_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="viernes_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="viernes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="viernes_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="sabado">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="sabado">
+                                    <strong>SÃ¡bado</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="sabado_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="sabado_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="sabado_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="sabado_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="day-schedule" data-day="domingo">
+                            <div class="day-header">
+                                <label>
+                                    <input type="checkbox" class="day-checkbox" data-day="domingo">
+                                    <strong>Domingo</strong>
+                                </label>
+                            </div>
+                            <div class="time-inputs">
+                                <input type="time" name="domingo_entrada" placeholder="Entrada" class="form-control">
+                                <input type="time" name="domingo_salida" placeholder="Salida" class="form-control">
+                                <input type="time" name="domingo_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
+                                <input type="time" name="domingo_salida_tarde" placeholder="Salida Tarde" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" name="observaciones" class="form-control" rows="3" placeholder="Observaciones adicionales sobre el horario"></textarea>
+                </div>
+
+                <div class="d-flex justify-between gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('horarioModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Horario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewHorarioModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Detalles del Horario</h3>
+                <button class="modal-close" onclick="closeModal('viewHorarioModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="horarioDetails">
+            </div>
+            <div class="d-flex justify-between gap-2 mt-3">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('viewHorarioModal')">
+                    Cerrar
+                </button>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-success" onclick="printSchedule()">
+                        <i class="fas fa-print"></i> Imprimir
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="editFromView()">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .large-modal .modal-content {
+            max-width: 1000px;
+            width: 95vw;
+        }
+        .schedule-days {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .day-schedule {
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+        .day-schedule.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .day-header {
+            margin-bottom: 10px;
+        }
+        .day-header label {
+            font-size: 1rem;
+            margin: 0;
+            cursor: pointer;
+        }
+        .time-inputs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .time-inputs input {
+            font-size: 0.9rem;
+        }
+        .schedule-calendar {
+            overflow-x: auto;
+        }
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .calendar-table th,
+        .calendar-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .calendar-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        .employee-schedule {
+            font-size: 0.8rem;
+            margin: 2px 0;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-activo {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-inactivo {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .col-md-3 { flex: 3; }
+        .col-md-4 { flex: 4; }
+        .col-md-6 { flex: 6; }
+        .hours-summary {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .schedule-preview {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .schedule-day {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            min-height: 80px;
+        }
+        .schedule-day.working {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+        .schedule-day.off {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+    </style>
+
+    <script src="../js/common.js"></script>
+    <script src="../js/horarios.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${titulo} ?: 'Sistema FerreterÃ­a'">Sistema FerreterÃ­a</title>
+    
+    <!-- CSS Framework -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- CSS Personalizado -->
+    <link th:href="@{/css/styles.css}" rel="stylesheet">
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Sistema de gestiÃ³n para ferreterÃ­a - Control de inventario, ventas y administraciÃ³n">
+    <meta name="keywords" content="ferreterÃ­a, inventario, ventas, gestiÃ³n, sistema">
+    <meta name="author" content="Sistema FerreterÃ­a">
+    
+    <!-- Favicon -->
+    <link th:href="@{/favicon.ico}" rel="icon" type="image/x-icon">
+    
+    <!-- CSS adicional especÃ­fico de la pÃ¡gina -->
+    <th:block th:fragment="css-adicional">
+        <!-- CSS especÃ­fico de cada pÃ¡gina se agregarÃ¡ aquÃ­ -->
+    </th:block>
+</head>
+<body>
+    <div class="app-container" th:fragment="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" th:fragment="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a th:href="@{/dashboard}" 
+                           th:classappend="${seccion == 'dashboard'} ? 'active' : ''">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'VENDEDOR')">
+                        <a th:href="@{/clientes}" 
+                           th:classappend="${seccion == 'clientes'} ? 'active' : ''">
+                            <i class="fas fa-users"></i> Clientes
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'BODEGUERO')">
+                        <a th:href="@{/productos}" 
+                           th:classappend="${seccion == 'productos'} ? 'active' : ''">
+                            <i class="fas fa-box"></i> Productos
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'BODEGUERO')">
+                        <a th:href="@{/stock}" 
+                           th:classappend="${seccion == 'stock'} ? 'active' : ''">
+                            <i class="fas fa-warehouse"></i> Stock
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'VENDEDOR')">
+                        <a th:href="@{/facturas}" 
+                           th:classappend="${seccion == 'facturas'} ? 'active' : ''">
+                            <i class="fas fa-file-invoice"></i> Facturas
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'BODEGUERO')">
+                        <a th:href="@{/pedidos}" 
+                           th:classappend="${seccion == 'pedidos'} ? 'active' : ''">
+                            <i class="fas fa-shopping-cart"></i> Pedidos
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE')">
+                        <a th:href="@{/empleados}" 
+                           th:classappend="${seccion == 'empleados'} ? 'active' : ''">
+                            <i class="fas fa-user-tie"></i> Empleados
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE', 'BODEGUERO')">
+                        <a th:href="@{/proveedores}" 
+                           th:classappend="${seccion == 'proveedores'} ? 'active' : ''">
+                            <i class="fas fa-truck"></i> Proveedores
+                        </a>
+                    </li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')">
+                        <a th:href="@{/usuarios}" 
+                           th:classappend="${seccion == 'usuarios'} ? 'active' : ''">
+                            <i class="fas fa-user-cog"></i> Usuarios
+                        </a>
+                    </li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')">
+                        <a th:href="@{/roles}" 
+                           th:classappend="${seccion == 'roles'} ? 'active' : ''">
+                            <i class="fas fa-shield-alt"></i> Roles
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE')">
+                        <a th:href="@{/horarios}" 
+                           th:classappend="${seccion == 'horarios'} ? 'active' : ''">
+                            <i class="fas fa-clock"></i> Horarios
+                        </a>
+                    </li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR', 'GERENTE')">
+                        <a th:href="@{/reportes}" 
+                           th:classappend="${seccion == 'reportes'} ? 'active' : ''">
+                            <i class="fas fa-chart-bar"></i> Reportes
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header" th:fragment="header">
+                <h1 th:text="${titulo} ?: 'Dashboard Principal'">Dashboard Principal</h1>
+                <div class="user-menu">
+                    <div class="user-info" sec:authorize="isAuthenticated()">
+                        <span>
+                            <i class="fas fa-user"></i> 
+                            <span sec:authentication="principal.nombreCompleto">Usuario</span>
+                            <small sec:authentication="principal.rol" class="text-muted">Rol</small>
+                        </span>
+                    </div>
+                    <div class="user-actions">
+                        <a th:href="@{/perfil}" class="btn btn-outline-primary btn-sm" title="Mi Perfil">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="toggleSidebar()" title="Toggle Menu">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <form th:action="@{/logout}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Cerrar SesiÃ³n">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <div class="content-area" th:fragment="content">
+                <!-- Alertas y mensajes -->
+                <div th:if="${mensaje}" class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle"></i>
+                    <span th:text="${mensaje}">Mensaje informativo</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span th:text="${error}">Mensaje de error</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <div th:if="${exito}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle"></i>
+                    <span th:text="${exito}">Mensaje de Ã©xito</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Contenido especÃ­fico de la pÃ¡gina -->
+                <th:block th:fragment="page-content">
+                    <!-- El contenido especÃ­fico de cada pÃ¡gina se insertarÃ¡ aquÃ­ -->
+                </th:block>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p>Cargando...</p>
+        </div>
+    </div>
+
+    <!-- Modal de confirmaciÃ³n global -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar AcciÃ³n</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage">Â¿EstÃ¡ seguro de que desea realizar esta acciÃ³n?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmButton">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts JavaScript -->
+    <!-- jQuery y Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Scripts personalizados -->
+    <script th:src="@{/js/common.js}"></script>
+    
+    <!-- Scripts adicionales especÃ­ficos de la pÃ¡gina -->
+    <th:block th:fragment="scripts-adicionales">
+        <!-- Scripts especÃ­ficos de cada pÃ¡gina se agregarÃ¡n aquÃ­ -->
+    </th:block>
+
+    <!-- Script base para funcionalidad comÃºn -->
+    <script>
+        // ConfiguraciÃ³n global de AJAX para CSRF
+        $(document).ready(function() {
+            var token = $("meta[name='_csrf']").attr("content");
+            var header = $("meta[name='_csrf_header']").attr("content");
+            $(document).ajaxSend(function(e, xhr, options) {
+                xhr.setRequestHeader(header, token);
+            });
+
+            // Auto-hide alerts despuÃ©s de 5 segundos
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 5000);
+        });
+
+        // FunciÃ³n para toggle del sidebar en mÃ³viles
+        function toggleSidebar() {
+            $('.sidebar').toggleClass('active');
+            $('.main-content').toggleClass('sidebar-open');
+        }
+
+        // FunciÃ³n para mostrar overlay de carga
+        function showLoading() {
+            $('#loadingOverlay').fadeIn();
+        }
+
+        // FunciÃ³n para ocultar overlay de carga
+        function hideLoading() {
+            $('#loadingOverlay').fadeOut();
+        }
+
+        // FunciÃ³n para confirmar acciones
+        function confirmAction(message, callback) {
+            $('#confirmMessage').text(message);
+            $('#confirmButton').off('click').on('click', function() {
+                $('#confirmModal').modal('hide');
+                if (callback) callback();
+            });
+            $('#confirmModal').modal('show');
+        }
+    </script>
+</body>
+</html>
+
+
