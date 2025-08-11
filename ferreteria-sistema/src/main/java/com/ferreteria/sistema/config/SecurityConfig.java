@@ -209,18 +209,9 @@ class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler
         // Registrar último acceso del usuario
         // Esto se implementaría en el servicio de usuario
         
-        // Redireccionar según el rol del usuario
-        String redirectURL = request.getContextPath();
-        
-        if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMINISTRADOR"))) {
-            redirectURL += "/admin/dashboard";
-        } else if (authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_GERENTE"))) {
-            redirectURL += "/dashboard";
-        } else {
-            redirectURL += "/dashboard";
-        }
+        // Redireccionar al dashboard principal para todos los roles
+        // Los permisos específicos se controlan por Spring Security
+        String redirectURL = request.getContextPath() + "/dashboard";
         
         response.sendRedirect(redirectURL);
     }

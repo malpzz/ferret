@@ -18,9 +18,9 @@ const dayNames = {
   domingo: "Domingo",
 };
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadHorarios();
-  loadEmpleados();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadHorarios();
+  await loadEmpleados();
   initializeHorariosPage();
   initializeDayCheckboxes();
 });
@@ -80,25 +80,29 @@ function initializeDayCheckboxes() {
   });
 }
 
-function loadHorarios() {
-  const horarios = loadData("horarios");
-  const empleados = loadData("empleados");
-
-  const horariosWithEmployees = horarios.map((horario) => {
-    const empleado = empleados.find((e) => e.id === horario.idEmpleado);
-    return {
-      ...horario,
-      nombreEmpleado: empleado
-        ? empleado.nombreEmpleado
-        : "Empleado no encontrado",
-    };
-  });
-
-  renderHorariosTable(horariosWithEmployees);
+async function loadHorarios() {
+  try {
+    const horarios = await apiGet('/api/horarios');
+    const empleados = await apiGet('/api/empleados');
+    const mapped = horarios.map(h => ({
+      id: h.idHorario || h.id,
+      idEmpleado: (h.empleado && (h.empleado.idEmpleado || h.empleado.id)) || h.idEmpleado,
+      nombreEmpleado: (h.empleado && h.empleado.nombreEmpleado) || '-',
+      fechaInicio: h.fecha || h.fechaInicio,
+      fechaFin: h.fechaFin || null,
+      tipoTurno: h.tipoTurno || 'completo',
+      horasSemanales: h.horasTrabajadas || null,
+      estado: 'activo',
+      observaciones: h.observaciones || ''
+    }));
+    renderHorariosTable(mapped);
+  } catch (e) {
+    showAlert(`Error cargando horarios: ${e.message}`, 'danger');
+  }
 }
 
-function loadEmpleados() {
-  const empleados = loadData("empleados");
+async function loadEmpleados() {
+  const empleados = await apiGet('/api/empleados');
 
   const select = document.getElementById("idEmpleado");
   select.innerHTML = '<option value="">Seleccione un empleado</option>';
@@ -108,8 +112,8 @@ function loadEmpleados() {
 
   empleados.forEach((empleado) => {
     const option = document.createElement("option");
-    option.value = empleado.id;
-    option.textContent = `${empleado.nombreEmpleado} - ${empleado.puesto}`;
+    option.value = empleado.idEmpleado || empleado.id;
+    option.textContent = `${empleado.nombreEmpleado} - ${empleado.puesto || ''}`;
     select.appendChild(option);
 
     const filterOption = option.cloneNode(true);
@@ -617,7 +621,7 @@ function deleteHorario(id) {
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   const formData = new FormData(e.target);
@@ -708,13 +712,8 @@ function handleFormSubmit(e) {
   }
 
   // Check for overlapping schedules for the same employee
-  const existingSchedules = loadData("horarios");
-  const employeeSchedules = existingSchedules.filter(
-    (h) =>
-      h.idEmpleado === horarioData.idEmpleado &&
-      h.id !== currentHorarioId &&
-      h.estado === "activo"
-  );
+  const existingSchedules = [];
+  const employeeSchedules = [];
 
   const hasOverlap = employeeSchedules.some((existing) => {
     const existingStart = new Date(existing.fechaInicio);
@@ -737,48 +736,26 @@ function handleFormSubmit(e) {
     return;
   }
 
-  if (currentHorarioId) {
-    // Edit existing horario
-    horarioData.id = currentHorarioId;
-    horarioData.fechaModificacion = new Date().toISOString();
-
-    if (updateRecord("horarios", currentHorarioId, horarioData)) {
+  try {
+    const payload = {
+      idEmpleado: parseInt(horarioData.idEmpleado),
+      fecha: horarioData.fechaInicio,
+      horaEntrada: 8.0,
+      horaSalida: 17.0,
+      observaciones: horarioData.observaciones || ''
+    };
+    if (currentHorarioId) {
+      await apiPut(`/api/horarios/${currentHorarioId}`, payload);
       showAlert("Horario actualizado correctamente", "success");
-      closeModal("horarioModal");
-      loadHorarios();
-      loadScheduleCalendar();
-
-      const empleados = loadData("empleados");
-      const empleado = empleados.find((e) => e.id === horarioData.idEmpleado);
-      logActivity(
-        `Horario modificado para: ${
-          empleado ? empleado.nombreEmpleado : "empleado"
-        }`
-      );
     } else {
-      showAlert("Error al actualizar el horario", "danger");
-    }
-  } else {
-    // Create new horario
-    horarioData.id = generateId();
-    horarioData.fechaCreacion = new Date().toISOString();
-
-    if (saveRecord("horarios", horarioData)) {
+      await apiPost('/api/horarios', payload);
       showAlert("Horario creado correctamente", "success");
-      closeModal("horarioModal");
-      loadHorarios();
-      loadScheduleCalendar();
-
-      const empleados = loadData("empleados");
-      const empleado = empleados.find((e) => e.id === horarioData.idEmpleado);
-      logActivity(
-        `Nuevo horario creado para: ${
-          empleado ? empleado.nombreEmpleado : "empleado"
-        }`
-      );
-    } else {
-      showAlert("Error al crear el horario", "danger");
     }
+    closeModal("horarioModal");
+    await loadHorarios();
+    loadScheduleCalendar();
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al guardar horario: ${e.message}`, 'danger');
   }
 }
 

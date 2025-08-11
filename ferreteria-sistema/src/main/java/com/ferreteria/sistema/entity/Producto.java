@@ -254,6 +254,23 @@ public class Producto {
         return nombreProducto + (marca != null ? " - " + marca : "");
     }
 
+    // Método para exponer idProveedor en JSON sin mapeo JPA
+    @Transient
+    public Long getIdProveedor() {
+        return proveedor != null ? proveedor.getIdProveedor() : null;
+    }
+
+    // Método para asignar proveedor por ID (útil para deserialización JSON)
+    @Transient
+    public void setIdProveedor(Long idProveedor) {
+        if (idProveedor != null) {
+            if (this.proveedor == null) {
+                this.proveedor = new Proveedor();
+            }
+            this.proveedor.setIdProveedor(idProveedor);
+        }
+    }
+
     public BigDecimal calcularMargenGanancia() {
         if (precioCompra == null || precioCompra.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -266,6 +283,7 @@ public class Producto {
         return stock.getCantidad() <= stockMinimo;
     }
 
+    @Transient
     public Integer getCantidadStock() {
         return stock != null ? stock.getCantidad() : 0;
     }

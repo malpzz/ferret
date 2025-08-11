@@ -1,9 +1,9 @@
 // Usuarios CRUD JavaScript
 let currentUsuarioId = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadUsuarios();
-  loadRoles();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadUsuarios();
+  await loadRoles();
   initializeUsuariosPage();
 });
 
@@ -27,36 +27,37 @@ function initializeUsuariosPage() {
 
   // Password confirmation validation
   const confirmPassword = document.getElementById("confirmarContraseña");
-  confirmPassword.addEventListener("input", validatePasswordMatch);
+  if (confirmPassword) {
+    confirmPassword.addEventListener("input", validatePasswordMatch);
+  }
 }
 
-function loadUsuarios() {
-  const usuarios = loadData("usuarios");
-  const roles = loadData("roles");
-
-  // Enrich usuarios with role information
-  const usuariosWithRoles = usuarios.map((usuario) => {
-    const rol = roles.find((r) => r.id === usuario.idRol);
-    return {
-      ...usuario,
-      nombreRol: rol ? rol.nombre : "Sin rol",
-    };
-  });
-
-  renderUsuariosTable(usuariosWithRoles);
+async function loadUsuarios() {
+  try {
+    const usuarios = await apiGet('/api/usuarios');
+    renderUsuariosTable(usuarios.map(u => ({
+      id: u.idUsuario || u.id,
+      nombreUsuario: u.nombreUsuario,
+      nombreRol: (u.rol && u.rol.nombre) || '-',
+      idRol: (u.rol && (u.rol.idRol || u.rol.id)) || null,
+    })));
+  } catch (e) {
+    showAlert(`Error cargando usuarios: ${e.message}`, 'danger');
+  }
 }
 
-function loadRoles() {
-  const roles = loadData("roles");
+async function loadRoles() {
   const select = document.getElementById("idRol");
-
   select.innerHTML = '<option value="">Seleccione un rol</option>';
-  roles.forEach((rol) => {
-    const option = document.createElement("option");
-    option.value = rol.id;
-    option.textContent = rol.nombre;
-    select.appendChild(option);
-  });
+  try {
+    const roles = await apiGet('/api/roles');
+    roles.forEach((rol) => {
+      const option = document.createElement("option");
+      option.value = rol.idRol || rol.id;
+      option.textContent = rol.nombre;
+      select.appendChild(option);
+    });
+  } catch {}
 }
 
 function renderUsuariosTable(usuarios) {
@@ -200,36 +201,14 @@ function resetPassword() {
   }
 }
 
-function deleteUsuario(id) {
-  const usuario = getRecord("usuarios", id);
-  if (!usuario) {
-    showAlert("Usuario no encontrado", "danger");
-    return;
-  }
-
-  // Prevent deleting the admin user
-  if (usuario.nombreUsuario === "admin") {
-    showAlert("No se puede eliminar el usuario administrador", "danger");
-    return;
-  }
-
-  if (
-    confirmDelete(
-      `¿Estás seguro de que deseas eliminar al usuario ${usuario.nombreUsuario}?`
-    )
-  ) {
-    deleteRecord("usuarios", id);
-    loadUsuarios();
+async function deleteUsuario(id) {
+  if (!confirmDelete("¿Estás seguro de eliminar este usuario?")) return;
+  try {
+    await apiDelete(`/api/usuarios/${id}`);
+    await loadUsuarios();
     showAlert("Usuario eliminado correctamente", "success");
-
-    // Add activity
-    if (typeof addActivity === "function") {
-      addActivity(
-        "usuario",
-        "Usuario eliminado",
-        `Se eliminó el usuario ${usuario.nombreUsuario}`
-      );
-    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al eliminar: ${e.message}`, 'danger');
   }
 }
 
@@ -246,7 +225,7 @@ function validatePasswordMatch() {
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   // Validation rules
@@ -303,59 +282,21 @@ function handleFormSubmit(e) {
     usuarioData.contraseña = password;
   }
 
-  const usuarios = loadData("usuarios");
-  const userExists = usuarios.some(
-    (u) =>
-      u.nombreUsuario.toLowerCase() ===
-        usuarioData.nombreUsuario.toLowerCase() &&
-      (!currentUsuarioId || u.id !== currentUsuarioId)
-  );
-
-  if (userExists) {
-    showAlert("Ya existe un usuario con este nombre", "danger");
+  try {
+    if (currentUsuarioId) {
+      await apiPut(`/api/usuarios/${currentUsuarioId}`, usuarioData);
+    } else {
+      await apiPost('/api/usuarios', usuarioData);
+    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al guardar: ${e.message}`, 'danger');
     return;
   }
-
-  let result;
-  let actionType;
-
-  if (currentUsuarioId) {
-    usuarioData.id = currentUsuarioId;
-    usuarioData.fechaModificacion = new Date().toISOString();
-
-    if (!password) {
-      const existingUser = getRecord("usuarios", currentUsuarioId);
-      usuarioData.contraseña = existingUser.contraseña;
-    }
-
-    result = updateRecord("usuarios", usuarioData);
-    actionType = "actualizado";
-  } else {
-    usuarioData.id = generateId(usuarios);
-    usuarioData.fechaCreacion = new Date().toISOString();
-    result = addRecord("usuarios", usuarioData);
-    actionType = "agregado";
-  }
-
-  if (result) {
-    loadUsuarios();
-    closeModal("usuarioModal");
-    clearForm("usuarioForm");
-
-    showAlert(`Usuario ${actionType} correctamente`, "success");
-
-    if (typeof addActivity === "function") {
-      const activityTitle = currentUsuarioId
-        ? "Usuario actualizado"
-        : "Nuevo usuario agregado";
-      const activityDesc = `${usuarioData.nombreUsuario} fue ${actionType}`;
-      addActivity("usuario", activityTitle, activityDesc);
-    }
-
-    currentUsuarioId = null;
-  } else {
-    showAlert("Error al guardar el usuario", "danger");
-  }
+  await loadUsuarios();
+  closeModal("usuarioModal");
+  clearForm("usuarioForm");
+  showAlert("Usuario guardado", "success");
+  currentUsuarioId = null;
 }
 
 window.openAddModal = openAddModal;

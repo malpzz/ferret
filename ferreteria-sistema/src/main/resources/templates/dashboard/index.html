@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,17 +15,17 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a th:href="@{/dashboard}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
-                    <li><a th:href="@{/clientes}"><i class="fas fa-users"></i> Clientes</a></li>
-                    <li><a th:href="@{/productos}"><i class="fas fa-box"></i> Productos</a></li>
-                    <li><a th:href="@{/stock}"><i class="fas fa-warehouse"></i> Stock</a></li>
-                    <li><a th:href="@{/facturas}"><i class="fas fa-file-invoice"></i> Facturas</a></li>
-                    <li><a th:href="@{/pedidos}"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
-                    <li><a th:href="@{/empleados}"><i class="fas fa-user-tie"></i> Empleados</a></li>
-                    <li><a th:href="@{/proveedores}"><i class="fas fa-truck"></i> Proveedores</a></li>
-                    <li><a th:href="@{/usuarios}"><i class="fas fa-user-cog"></i> Usuarios</a></li>
-                    <li><a th:href="@{/roles}"><i class="fas fa-shield-alt"></i> Roles</a></li>
-                    <li><a th:href="@{/horarios}"><i class="fas fa-clock"></i> Horarios</a></li>
+                    <li sec:authorize="isAuthenticated()"><a th:href="@{/dashboard}" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/clientes}"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/productos}"><i class="fas fa-box"></i> Productos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/stock}"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/facturas}"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/pedidos}"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/empleados}"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/proveedores}"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/usuarios}"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/roles}"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/horarios}"><i class="fas fa-clock"></i> Horarios</a></li>
                 </ul>
             </nav>
         </aside>
@@ -36,7 +36,8 @@
                 <div class="user-menu">
                     <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <form th:action="@{/logout}" method="post" style="display:inline">
-                        <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <button type="submit" class="btn-logout" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
                     </form>
                 </div>
             </header>
@@ -84,19 +85,19 @@
                 <div class="quick-actions">
                     <h2>Acciones RÃ¡pidas</h2>
                     <div class="actions-grid">
-                        <a th:href="@{/clientes}" class="action-card">
+                        <a sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')" th:href="@{/clientes}" class="action-card">
                             <i class="fas fa-user-plus"></i>
                             <span>Nuevo Cliente</span>
                         </a>
-                        <a th:href="@{/productos}" class="action-card">
+                        <a sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')" th:href="@{/productos}" class="action-card">
                             <i class="fas fa-plus"></i>
                             <span>Nuevo Producto</span>
                         </a>
-                        <a th:href="@{/facturas}" class="action-card">
+                        <a sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')" th:href="@{/facturas}" class="action-card">
                             <i class="fas fa-file-plus"></i>
                             <span>Nueva Factura</span>
                         </a>
-                        <a th:href="@{/stock}" class="action-card">
+                        <a sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')" th:href="@{/stock}" class="action-card">
                             <i class="fas fa-warehouse"></i>
                             <span>Gestionar Stock</span>
                         </a>

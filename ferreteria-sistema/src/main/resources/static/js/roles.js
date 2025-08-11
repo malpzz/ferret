@@ -1,7 +1,7 @@
 let currentRolId = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadRoles();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadRoles();
   initializeRolesPage();
 });
 
@@ -21,19 +21,19 @@ function initializeRolesPage() {
   }
 }
 
-function loadRoles() {
-  const roles = loadData("roles");
-  const usuarios = loadData("usuarios");
-
-  const rolesWithUserCount = roles.map((rol) => {
-    const userCount = usuarios.filter((user) => user.idRol === rol.id).length;
-    return {
-      ...rol,
-      usuariosCount: userCount,
-    };
-  });
-
-  renderRolesTable(rolesWithUserCount);
+async function loadRoles() {
+  try {
+    const roles = await apiGet('/api/roles');
+    renderRolesTable(roles.map(r => ({
+      id: r.idRol || r.id,
+      nombre: r.nombre,
+      descripcion: r.descripcion || '',
+      permisos: r.permisos || [],
+      usuariosCount: r.usuariosCount || 0,
+    })));
+  } catch (e) {
+    showAlert(`Error cargando roles: ${e.message}`, 'danger');
+  }
 }
 
 function renderRolesTable(roles) {
@@ -81,9 +81,11 @@ function openAddModal() {
   openModal("rolModal");
 }
 
-function editRol(id) {
-  const rol = getRecord("roles", id);
-  if (!rol) {
+async function editRol(id) {
+  let rol;
+  try {
+    rol = await apiGet(`/api/roles/${id}`);
+  } catch {
     showAlert("Rol no encontrado", "danger");
     return;
   }
@@ -204,32 +206,14 @@ function editFromView() {
   editRol(currentRolId);
 }
 
-function deleteRol(id) {
-  const rol = getRecord("roles", id);
-  if (!rol) {
-    showAlert("Rol no encontrado", "danger");
-    return;
-  }
-
-  const usuarios = loadData("usuarios");
-  const assignedUsers = usuarios.filter((user) => user.idRol === id);
-
-  if (assignedUsers.length > 0) {
-    showAlert(
-      `No se puede eliminar el rol "${rol.nombre}" porque tiene ${assignedUsers.length} usuario(s) asignado(s). Primero debe reasignar o eliminar estos usuarios.`,
-      "danger"
-    );
-    return;
-  }
-
-  if (confirm(`¿Estás seguro de eliminar el rol "${rol.nombre}"?`)) {
-    if (deleteRecord("roles", id)) {
-      showAlert("Rol eliminado correctamente", "success");
-      loadRoles();
-      logActivity(`Rol eliminado: ${rol.nombre}`);
-    } else {
-      showAlert("Error al eliminar el rol", "danger");
-    }
+async function deleteRol(id) {
+  if (!confirm("¿Estás seguro de eliminar este rol?")) return;
+  try {
+    await apiDelete(`/api/roles/${id}`);
+    await loadRoles();
+    showAlert("Rol eliminado correctamente", "success");
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al eliminar rol: ${e.message}`, 'danger');
   }
 }
 
@@ -240,7 +224,7 @@ function clearPermissions() {
   });
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   const formData = new FormData(e.target);
@@ -255,43 +239,19 @@ function handleFormSubmit(e) {
     return;
   }
 
-  const existingRoles = loadData("roles");
-  const duplicateRole = existingRoles.find(
-    (rol) =>
-      rol.nombre.toLowerCase() === rolData.nombre.toLowerCase() &&
-      rol.id !== currentRolId
-  );
-
-  if (duplicateRole) {
-    showAlert("Ya existe un rol con ese nombre", "danger");
+  try {
+    if (currentRolId) {
+      await apiPut(`/api/roles/${currentRolId}`, rolData);
+    } else {
+      await apiPost('/api/roles', rolData);
+    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al guardar rol: ${e.message}`, 'danger');
     return;
   }
-
-  if (currentRolId) {
-    rolData.id = currentRolId;
-    rolData.fechaModificacion = new Date().toISOString();
-
-    if (updateRecord("roles", currentRolId, rolData)) {
-      showAlert("Rol actualizado correctamente", "success");
-      closeModal("rolModal");
-      loadRoles();
-      logActivity(`Rol modificado: ${rolData.nombre}`);
-    } else {
-      showAlert("Error al actualizar el rol", "danger");
-    }
-  } else {
-    rolData.id = generateId();
-    rolData.fechaCreacion = new Date().toISOString();
-
-    if (saveRecord("roles", rolData)) {
-      showAlert("Rol creado correctamente", "success");
-      closeModal("rolModal");
-      loadRoles();
-      logActivity(`Nuevo rol creado: ${rolData.nombre}`);
-    } else {
-      showAlert("Error al crear el rol", "danger");
-    }
-  }
+  await loadRoles();
+  closeModal("rolModal");
+  showAlert("Rol guardado", "success");
 }
 
 function initializeSampleRoles() {

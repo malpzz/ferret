@@ -1,7 +1,7 @@
 let currentProveedorId = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadProveedores();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadProveedores();
   initializeProveedoresPage();
 });
 
@@ -21,9 +21,19 @@ function initializeProveedoresPage() {
   }
 }
 
-function loadProveedores() {
-  const proveedores = loadData("proveedores");
-  renderProveedoresTable(proveedores);
+async function loadProveedores() {
+  try {
+    const proveedores = await apiGet('/api/proveedores');
+    renderProveedoresTable(proveedores.map(p => ({
+      id: p.idProveedor || p.id,
+      nombreProveedor: p.nombreProveedor,
+      direccion: p.direccion,
+      telefono: p.telefono,
+      email: p.email,
+    })));
+  } catch (e) {
+    showAlert(`Error cargando proveedores: ${e.message}`, 'danger');
+  }
 }
 
 function renderProveedoresTable(proveedores) {
@@ -144,60 +154,30 @@ function editFromView() {
 function viewOrders() {
   if (currentProveedorId) {
     closeModal("viewProveedorModal");
-    window.location.href = `pedidos.html?proveedor=${currentProveedorId}`;
+    window.location.href = `/pedidos?proveedor=${currentProveedorId}`;
   }
 }
 
-function deleteProveedor(id) {
-  const proveedor = getRecord("proveedores", id);
-  if (!proveedor) {
-    showAlert("Proveedor no encontrado", "danger");
-    return;
-  }
-
-  if (
-    confirmDelete(
-      `¿Estás seguro de que deseas eliminar al proveedor ${proveedor.nombreProveedor}?`
-    )
-  ) {
-    const pedidos = loadData("pedidos");
-    const hasPedidos = pedidos.some((p) => p.idProveedor === id);
-
-    if (hasPedidos) {
-      showAlert(
-        "No se puede eliminar el proveedor porque tiene pedidos asociados",
-        "danger"
-      );
-      return;
-    }
-
-    deleteRecord("proveedores", id);
-    loadProveedores();
+async function deleteProveedor(id) {
+  if (!confirmDelete("¿Estás seguro de eliminar este proveedor?")) return;
+  try {
+    await apiDelete(`/api/proveedores/${id}`);
+    await loadProveedores();
     showAlert("Proveedor eliminado correctamente", "success");
-
-    if (typeof addActivity === "function") {
-      addActivity(
-        "proveedor",
-        "Proveedor eliminado",
-        `Se eliminó al proveedor ${proveedor.nombreProveedor}`
-      );
-    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al eliminar: ${e.message}`, 'danger');
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
-
   const validationRules = [
     { field: "nombreProveedor", label: "Nombre", required: true, minLength: 3 },
     { field: "direccion", label: "Dirección", required: true, minLength: 5 },
     { field: "telefono", label: "Teléfono", required: true, type: "phone" },
     { field: "email", label: "Email", required: true, type: "email" },
   ];
-
-  if (!validateForm("proveedorForm", validationRules)) {
-    return;
-  }
+  if (!validateForm("proveedorForm", validationRules)) return;
 
   const formData = new FormData(e.target);
   const proveedorData = {
@@ -206,50 +186,21 @@ function handleFormSubmit(e) {
     telefono: formData.get("telefono").trim(),
     email: formData.get("email").trim().toLowerCase(),
   };
-
-  const proveedores = loadData("proveedores");
-  const emailExists = proveedores.some(
-    (p) =>
-      p.email === proveedorData.email &&
-      (!currentProveedorId || p.id !== currentProveedorId)
-  );
-
-  if (emailExists) {
-    showAlert("Ya existe un proveedor con este email", "danger");
+  try {
+    if (currentProveedorId) {
+      await apiPut(`/api/proveedores/${currentProveedorId}`, proveedorData);
+    } else {
+      await apiPost('/api/proveedores', proveedorData);
+    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al guardar: ${e.message}`, 'danger');
     return;
   }
-
-  let result;
-  let actionType;
-
-  if (currentProveedorId) {
-    proveedorData.id = currentProveedorId;
-    result = updateRecord("proveedores", proveedorData);
-    actionType = "actualizado";
-  } else {
-    proveedorData.id = generateId(proveedores);
-    result = addRecord("proveedores", proveedorData);
-    actionType = "agregado";
-  }
-
-  if (result) {
-    loadProveedores();
-    closeModal("proveedorModal");
-    clearForm("proveedorForm");
-    showAlert(`Proveedor ${actionType} correctamente`, "success");
-
-    if (typeof addActivity === "function") {
-      const activityTitle = currentProveedorId
-        ? "Proveedor actualizado"
-        : "Nuevo proveedor agregado";
-      const activityDesc = `${proveedorData.nombreProveedor} fue ${actionType}`;
-      addActivity("proveedor", activityTitle, activityDesc);
-    }
-
-    currentProveedorId = null;
-  } else {
-    showAlert("Error al guardar el proveedor", "danger");
-  }
+  await loadProveedores();
+  closeModal("proveedorModal");
+  clearForm("proveedorForm");
+  showAlert("Proveedor guardado", "success");
+  currentProveedorId = null;
 }
 
 window.openAddModal = openAddModal;

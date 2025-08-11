@@ -1,7 +1,7 @@
 let currentClienteId = null;
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadClientes();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadClientes();
   initializeClientesPage();
 });
 
@@ -15,21 +15,49 @@ function initializeClientesPage() {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
+        // Crear formulario de logout para Spring Security
+        const logoutForm = document.createElement('form');
+        logoutForm.method = 'POST';
+        logoutForm.action = buildApiUrl('/logout');
+        
+        // Añadir token CSRF
+        const csrfHeaders = getCsrfHeader();
+        if (csrfHeaders._csrf) {
+          const csrfInput = document.createElement('input');
+          csrfInput.type = 'hidden';
+          csrfInput.name = csrfHeaders._csrf_parameterName || '_csrf';
+          csrfInput.value = csrfHeaders._csrf;
+          logoutForm.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(logoutForm);
+        logoutForm.submit();
       }
     });
   }
 }
 
-function loadClientes() {
-  const clientes = loadData("clientes");
-  renderClientesTable(clientes);
+async function loadClientes() {
+  try {
+    const clientes = await apiGet('/api/clientes');
+    renderClientesTable(clientes.map(c => ({
+      id: c.idCliente,
+      nombreCliente: c.nombreCliente,
+      apellidos: c.apellidos,
+      telefono: c.telefono,
+      email: c.email,
+      direccion: c.direccion,
+    })));
+  } catch (e) {
+    showAlert(`Error cargando clientes: ${e.message}`, 'danger');
+  }
 }
 
 function renderClientesTable(clientes) {
   const columns = [
     { key: "nombreCliente", label: "Nombre" },
     { key: "apellidos", label: "Apellidos" },
+    { key: "direccion", label: "Dirección", format: (value) => value || "Sin dirección" },
     { key: "telefono", label: "Teléfono" },
     { key: "email", label: "Email" },
   ];
@@ -62,49 +90,64 @@ function openAddModal() {
   openModal("clienteModal");
 }
 
-function editCliente(id) {
-  const cliente = getRecord("clientes", id);
-  if (!cliente) {
-    showAlert("Cliente no encontrado", "danger");
-    return;
+async function editCliente(id) {
+  try {
+    // Obtener datos del cliente desde la API
+    const cliente = await apiGet(`/api/clientes/${id}`);
+    if (!cliente) {
+      showAlert("Cliente no encontrado", "danger");
+      return;
+    }
+
+    document.getElementById("modalTitle").textContent = "Editar Cliente";
+    currentClienteId = id;
+
+    const form = document.getElementById("clienteForm");
+    form.querySelector('[name="id"]').value = cliente.idCliente || '';
+    form.querySelector('[name="nombreCliente"]').value = cliente.nombreCliente || '';
+    form.querySelector('[name="apellidos"]').value = cliente.apellidos || '';
+    form.querySelector('[name="direccion"]').value = cliente.direccion || '';
+    form.querySelector('[name="telefono"]').value = cliente.telefono || '';
+    form.querySelector('[name="email"]').value = cliente.email || '';
+
+    openModal("clienteModal");
+  } catch (e) {
+    console.error('[Clientes] error al cargar cliente para editar', e);
+    if (e.status === 404) {
+      showAlert("Cliente no encontrado", "danger");
+    } else {
+      showAlert(`Error al cargar cliente: ${e.message}`, "danger");
+    }
   }
-
-  document.getElementById("modalTitle").textContent = "Editar Cliente";
-  currentClienteId = id;
-
-  const form = document.getElementById("clienteForm");
-  form.querySelector('[name="id"]').value = cliente.id;
-  form.querySelector('[name="nombreCliente"]').value = cliente.nombreCliente;
-  form.querySelector('[name="apellidos"]').value = cliente.apellidos;
-  form.querySelector('[name="direccion"]').value = cliente.direccion;
-  form.querySelector('[name="telefono"]').value = cliente.telefono;
-  form.querySelector('[name="email"]').value = cliente.email;
-
-  openModal("clienteModal");
 }
 
-function viewCliente(id) {
-  const cliente = getRecord("clientes", id);
-  if (!cliente) {
-    showAlert("Cliente no encontrado", "danger");
-    return;
-  }
+async function viewCliente(id) {
+  try {
+    // Obtener datos del cliente desde la API
+    const cliente = await apiGet(`/api/clientes/${id}`);
+    if (!cliente) {
+      showAlert("Cliente no encontrado", "danger");
+      return;
+    }
 
-  currentClienteId = id;
+    currentClienteId = id;
 
-  const detailsHtml = `
+    const detailsHtml = `
         <div class="cliente-details">
+            <div class="detail-row">
+                <strong>ID:</strong> ${cliente.idCliente}
+            </div>
             <div class="detail-row">
                 <strong>Nombre Completo:</strong> ${cliente.nombreCliente} ${cliente.apellidos}
             </div>
             <div class="detail-row">
-                <strong>Dirección:</strong> ${cliente.direccion}
+                <strong>Dirección:</strong> ${cliente.direccion || 'Sin dirección'}
             </div>
             <div class="detail-row">
-                <strong>Teléfono:</strong> ${cliente.telefono}
+                <strong>Teléfono:</strong> ${cliente.telefono || 'Sin teléfono'}
             </div>
             <div class="detail-row">
-                <strong>Email:</strong> ${cliente.email}
+                <strong>Email:</strong> ${cliente.email || 'Sin email'}
             </div>
         </div>
         <style>
@@ -118,8 +161,16 @@ function viewCliente(id) {
         </style>
     `;
 
-  document.getElementById("clienteDetails").innerHTML = detailsHtml;
-  openModal("viewClienteModal");
+    document.getElementById("clienteDetails").innerHTML = detailsHtml;
+    openModal("viewClienteModal");
+  } catch (e) {
+    console.error('[Clientes] error al cargar cliente', e);
+    if (e.status === 404) {
+      showAlert("Cliente no encontrado", "danger");
+    } else {
+      showAlert(`Error al cargar cliente: ${e.message}`, "danger");
+    }
+  }
 }
 
 function editFromView() {
@@ -127,44 +178,50 @@ function editFromView() {
   editCliente(currentClienteId);
 }
 
-function deleteCliente(id) {
-  const cliente = getRecord("clientes", id);
-  if (!cliente) {
-    showAlert("Cliente no encontrado", "danger");
-    return;
-  }
-
-  if (
-    confirmDelete(
-      `¿Estás seguro de que deseas eliminar al cliente ${cliente.nombreCliente} ${cliente.apellidos}?`
-    )
-  ) {
-    const facturas = loadData("facturas");
-    const isUsed = facturas.some((f) => f.idCliente === id);
-
-    if (isUsed) {
-      showAlert(
-        "No se puede eliminar el cliente porque tiene facturas asociadas",
-        "danger"
-      );
+async function deleteCliente(id) {
+  try {
+    // Obtener datos del cliente desde la API para confirmar eliminación
+    const cliente = await apiGet(`/api/clientes/${id}`);
+    if (!cliente) {
+      showAlert("Cliente no encontrado", "danger");
       return;
     }
 
-    deleteRecord("clientes", id);
-    loadClientes();
-    showAlert("Cliente eliminado correctamente", "success");
+    if (
+      confirmDelete(
+        `¿Estás seguro de que deseas eliminar al cliente ${cliente.nombreCliente} ${cliente.apellidos}?`
+      )
+    ) {
+      console.log('[Clientes] eliminando cliente', id);
+      
+      // Llamar a la API para eliminar
+      await apiDelete(`/api/clientes/${id}`);
+      
+      // Recargar la tabla
+      await loadClientes();
+      showAlert("Cliente eliminado correctamente", "success");
 
-    if (typeof addActivity === "function") {
-      addActivity(
-        "cliente",
-        "Cliente eliminado",
-        `Se eliminó el cliente ${cliente.nombreCliente} ${cliente.apellidos}`
-      );
+      if (typeof addActivity === "function") {
+        addActivity(
+          "cliente",
+          "Cliente eliminado",
+          `${cliente.nombreCliente} ${cliente.apellidos} fue eliminado`
+        );
+      }
+    }
+  } catch (e) {
+    console.error('[Clientes] error al eliminar', e);
+    if (e.status === 404) {
+      showAlert("Cliente no encontrado", "danger");
+    } else if (e.status === 409) {
+      showAlert("No se puede eliminar el cliente porque tiene facturas asociadas", "danger");
+    } else {
+      showAlert(`Error al eliminar cliente: ${e.message}`, "danger");
     }
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   const validationRules = [
@@ -188,33 +245,26 @@ function handleFormSubmit(e) {
     email: formData.get("email").trim().toLowerCase(),
   };
 
-  const clientes = loadData("clientes");
-  const emailExists = clientes.some(
-    (c) =>
-      c.email === clienteData.email &&
-      (!currentClienteId || c.id !== currentClienteId)
-  );
-
-  if (emailExists) {
-    showAlert("Ya existe un cliente con este email", "danger");
-    return;
-  }
+  // validación se realiza en servidor
 
   let result;
   let actionType;
 
-  if (currentClienteId) {
-    clienteData.id = currentClienteId;
-    result = updateRecord("clientes", clienteData);
-    actionType = "actualizado";
-  } else {
-    clienteData.id = generateId(clientes);
-    result = addRecord("clientes", clienteData);
-    actionType = "agregado";
+  try {
+    if (currentClienteId) {
+      result = await apiPut(`/api/clientes/${currentClienteId}`, clienteData);
+      actionType = "actualizado";
+    } else {
+      result = await apiPost('/api/clientes', clienteData);
+      actionType = "agregado";
+    }
+  } catch (e) {
+    showAlert(e.data?.mensaje || `Error al guardar: ${e.message}`, 'danger');
+    return;
   }
 
   if (result) {
-    loadClientes();
+    await loadClientes();
     closeModal("clienteModal");
     clearForm("clienteForm");
     showAlert(`Cliente ${actionType} correctamente`, "success");

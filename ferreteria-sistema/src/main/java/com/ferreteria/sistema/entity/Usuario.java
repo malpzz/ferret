@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -72,10 +73,12 @@ public class Usuario {
 
     // Relación uno a muchos con facturas
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Factura> facturas = new HashSet<>();
 
     // Relación uno a muchos con pedidos
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Pedido> pedidos = new HashSet<>();
 
     // Constructor por defecto
@@ -205,6 +208,7 @@ public class Usuario {
         this.rol = rol;
     }
 
+    @JsonIgnore
     public Set<Factura> getFacturas() {
         return facturas;
     }
@@ -213,6 +217,7 @@ public class Usuario {
         this.facturas = facturas;
     }
 
+    @JsonIgnore
     public Set<Pedido> getPedidos() {
         return pedidos;
     }

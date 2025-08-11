@@ -3,6 +3,8 @@ package com.ferreteria.sistema.service;
 import com.ferreteria.sistema.entity.Cliente;
 import com.ferreteria.sistema.repository.ClienteRepository;
 import com.ferreteria.sistema.dao.ClienteSpDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +29,19 @@ public class ClienteService {
     @Autowired
     private ClienteSpDao clienteSpDao;
 
+    private static final Logger log = LoggerFactory.getLogger(ClienteService.class);
+
     /**
      * Obtiene todos los clientes
      * @return lista de clientes
      */
     public List<Cliente> obtenerTodos() {
-        return clienteSpDao.listar();
+        try {
+            return clienteSpDao.listar();
+        } catch (Exception ex) {
+            log.warn("Fallo al listar clientes via paquete Oracle; usando repositorio JPA como fallback: {}", ex.getMessage());
+            return clienteRepository.findAll();
+        }
     }
 
     /**
@@ -157,8 +166,12 @@ public class ClienteService {
      * @throws IllegalArgumentException si los datos son inválidos
      */
     public Cliente actualizar(Long id, Cliente clienteActualizado) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
+        // Usar SP DAO para obtener cliente actual sin lazy loading
+        Optional<Cliente> clienteOpt = clienteSpDao.obtenerPorId(id);
+        if (!clienteOpt.isPresent()) {
+            throw new IllegalArgumentException("Cliente no encontrado");
+        }
+        Cliente cliente = clienteOpt.get();
 
         // Validar que el email no exista en otro cliente (si se proporciona)
         if (clienteActualizado.getEmail() != null &&
@@ -192,8 +205,9 @@ public class ClienteService {
 
         cliente.setFechaModificacion(LocalDateTime.now());
 
+        // Usar SP para actualizar y devolver objeto limpio
         clienteSpDao.actualizar(id, cliente);
-        return clienteRepository.findById(id).orElse(cliente);
+        return clienteSpDao.obtenerPorId(id).orElse(cliente);
     }
 
     /**
@@ -218,14 +232,14 @@ public class ClienteService {
      * @throws IllegalArgumentException si el cliente no puede ser eliminado
      */
     public void eliminar(Long id) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Cliente no encontrado"));
-
-        // Verificar si el cliente tiene facturas asociadas
-        if (!cliente.getFacturas().isEmpty()) {
-            throw new IllegalArgumentException("No se puede eliminar el cliente porque tiene facturas asociadas");
+        // Verificar que el cliente existe usando SP DAO
+        Optional<Cliente> clienteOpt = clienteSpDao.obtenerPorId(id);
+        if (!clienteOpt.isPresent()) {
+            throw new IllegalArgumentException("Cliente no encontrado");
         }
 
+        // El SP ya maneja la verificación de facturas asociadas
+        // y lanza excepción si no se puede eliminar
         clienteSpDao.eliminar(id);
     }
 

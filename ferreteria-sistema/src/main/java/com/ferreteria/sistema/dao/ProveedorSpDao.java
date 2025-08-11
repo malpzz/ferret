@@ -4,6 +4,8 @@ import com.ferreteria.sistema.entity.Proveedor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.SqlParameter;
+import java.sql.Types;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
 
@@ -47,6 +49,8 @@ public class ProveedorSpDao {
     public Optional<Proveedor> obtenerPorId(Long id) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
                 .withCatalogName("PKG_FERRETERIA").withFunctionName("FN_OBTENER_PROVEEDOR")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(new SqlParameter("P_ID", Types.NUMERIC))
                 .returningResultSet("RETURN_VALUE", mapper());
         Map<String, Object> out = call.execute(new MapSqlParameterSource().addValue("P_ID", id));
         @SuppressWarnings("unchecked") List<Proveedor> list = (List<Proveedor>) out.get("RETURN_VALUE");
@@ -56,7 +60,17 @@ public class ProveedorSpDao {
 
     public void insertar(Proveedor p) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_INSERTAR_PROVEEDOR");
+                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_INSERTAR_PROVEEDOR_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("P_NOMBRE", Types.VARCHAR),
+                        new SqlParameter("P_DIRECCION", Types.VARCHAR),
+                        new SqlParameter("P_TELEFONO", Types.VARCHAR),
+                        new SqlParameter("P_EMAIL", Types.VARCHAR),
+                        new SqlParameter("P_CONTACTO", Types.VARCHAR),
+                        new SqlParameter("P_RUC", Types.VARCHAR),
+                        new SqlParameter("P_CONDICIONES_PAGO", Types.VARCHAR)
+                );
         MapSqlParameterSource in = new MapSqlParameterSource()
                 .addValue("P_NOMBRE", p.getNombreProveedor())
                 .addValue("P_DIRECCION", p.getDireccion())
@@ -70,7 +84,18 @@ public class ProveedorSpDao {
 
     public void actualizar(Long id, Proveedor p) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_ACTUALIZAR_PROVEEDOR");
+                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_ACTUALIZAR_PROVEEDOR_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("P_ID", Types.NUMERIC),
+                        new SqlParameter("P_NOMBRE", Types.VARCHAR),
+                        new SqlParameter("P_DIRECCION", Types.VARCHAR),
+                        new SqlParameter("P_TELEFONO", Types.VARCHAR),
+                        new SqlParameter("P_EMAIL", Types.VARCHAR),
+                        new SqlParameter("P_CONTACTO", Types.VARCHAR),
+                        new SqlParameter("P_RUC", Types.VARCHAR),
+                        new SqlParameter("P_CONDICIONES_PAGO", Types.VARCHAR)
+                );
         MapSqlParameterSource in = new MapSqlParameterSource()
                 .addValue("P_ID", id)
                 .addValue("P_NOMBRE", p.getNombreProveedor())
@@ -85,7 +110,9 @@ public class ProveedorSpDao {
 
     public void eliminar(Long id) {
         new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_ELIMINAR_PROVEEDOR")
+                .withCatalogName("PKG_FERRETERIA").withProcedureName("SP_ELIMINAR_PROVEEDOR_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(new SqlParameter("P_ID", Types.NUMERIC))
                 .execute(new MapSqlParameterSource().addValue("P_ID", id));
     }
 }

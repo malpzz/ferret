@@ -1,6 +1,7 @@
 package com.ferreteria.sistema.dao;
 
 import com.ferreteria.sistema.entity.Pedido;
+import com.ferreteria.sistema.entity.Proveedor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -30,9 +31,32 @@ public class PedidoSpDao {
                 p.setTotal(rs.getBigDecimal("TOTAL"));
                 String estado = rs.getString("ESTADO");
                 if (estado != null) {
-                    try { p.setEstado(Pedido.EstadoPedido.valueOf(estado)); } catch (IllegalArgumentException ignored) {}
+                    String normalized = estado.trim().toUpperCase();
+                    try { p.setEstado(Pedido.EstadoPedido.valueOf(normalized)); } catch (IllegalArgumentException ignored) {}
                 }
-                p.setDescripcion(rs.getString("DESCRIPCION"));
+                // DESCRIPCION puede no venir en el cursor
+                try { p.setDescripcion(rs.getString("DESCRIPCION")); } catch (Exception ignored) {}
+                // Mapear proveedor por ID/nombre si vienen en el cursor
+                try {
+                    Proveedor prov = p.getProveedor();
+                    if (prov == null) prov = new Proveedor();
+                    boolean setAny = false;
+                    try {
+                        long idProv = rs.getLong("IDPROVEEDOR");
+                        if (!rs.wasNull()) {
+                            prov.setIdProveedor(idProv);
+                            setAny = true;
+                        }
+                    } catch (Exception ignoredInner) {}
+                    try {
+                        String nombreProv = rs.getString("NOMBREPROVEEDOR");
+                        if (nombreProv != null) {
+                            prov.setNombreProveedor(nombreProv);
+                            setAny = true;
+                        }
+                    } catch (Exception ignoredInner) {}
+                    if (setAny) p.setProveedor(prov);
+                } catch (Exception ignored) {}
                 java.sql.Timestamp fe = rs.getTimestamp("FECHA_ENTREGA_ESPERADA");
                 if (fe != null) {
                     p.setFechaEntregaEsperada(fe.toLocalDateTime().toLocalDate());

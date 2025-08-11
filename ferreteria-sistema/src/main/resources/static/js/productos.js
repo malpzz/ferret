@@ -1,7 +1,10 @@
 let currentProductoId = null;
+let currentProductoData = null;
+const DEBUG_PRODUCTOS = true;
 
-document.addEventListener("DOMContentLoaded", function () {
-  loadProductos();
+document.addEventListener("DOMContentLoaded", async function () {
+  await loadProductos();
+  await loadProveedores();
   initializeProductosPage();
 });
 
@@ -16,38 +19,59 @@ function initializeProductosPage() {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
+        // Crear formulario de logout para Spring Security
+        const logoutForm = document.createElement('form');
+        logoutForm.method = 'POST';
+        logoutForm.action = buildApiUrl('/logout');
+        
+        // Añadir token CSRF
+        const csrfHeaders = getCsrfHeader();
+        if (csrfHeaders._csrf) {
+          const csrfInput = document.createElement('input');
+          csrfInput.type = 'hidden';
+          csrfInput.name = csrfHeaders._csrf_parameterName || '_csrf';
+          csrfInput.value = csrfHeaders._csrf;
+          logoutForm.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(logoutForm);
+        logoutForm.submit();
       }
     });
   }
 }
 
-function loadProductos() {
-  const productos = loadData("productos");
-  const stock = loadData("stock");
-
-  const productosWithStock = productos.map((producto) => {
-    const stockInfo = stock.find((s) => s.idProducto === producto.id);
-    return {
-      ...producto,
-      cantidad: stockInfo ? stockInfo.cantidad : 0,
-    };
-  });
-
-  renderProductosTable(productosWithStock);
+async function loadProductos() {
+  try {
+    // Agregar timestamp para evitar cache
+    const cacheBuster = `?_t=${Date.now()}`;
+    const productos = await apiGet(`/api/productos${cacheBuster}`);
+    
+    if (DEBUG_PRODUCTOS) console.log('[Productos] productos desde API', productos);
+    renderProductosTable(productos);
+  } catch (e) {
+    if (DEBUG_PRODUCTOS) console.error('[Productos] error loadProductos', e);
+    showAlert(`Error cargando productos: ${e.message}`, 'danger');
+  }
 }
 
-function loadProveedores() {
-  const proveedores = loadData("proveedores");
-  const select = document.getElementById("IdProveedor");
-
-  select.innerHTML = '<option value="">Seleccione un proveedor</option>';
-  proveedores.forEach((proveedor) => {
-    const option = document.createElement("option");
-    option.value = proveedor.id;
-    option.textContent = proveedor.nombreProveedor;
-    select.appendChild(option);
-  });
+async function loadProveedores() {
+  try {
+    const proveedores = await apiGet('/api/proveedores');
+    const select = document.getElementById("IdProveedor");
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">Seleccione un proveedor</option>';
+    proveedores.forEach((proveedor) => {
+      const option = document.createElement("option");
+      option.value = (proveedor.idProveedor || proveedor.id) + '';
+      option.textContent = proveedor.nombreProveedor;
+      select.appendChild(option);
+    });
+    if (currentVal) select.value = currentVal; // mantener selección si se recarga
+  } catch (e) {
+    // opcional: showAlert
+  }
 }
 
 function renderProductosTable(productos) {
@@ -57,24 +81,40 @@ function renderProductosTable(productos) {
       key: "descripcion",
       label: "Descripción",
       format: (value) =>
-        value.length > 50 ? value.substring(0, 50) + "..." : value,
+        (value && value.length > 50) ? value.substring(0, 50) + "..." : (value || ""),
+    },
+    {
+      key: "proveedor", 
+      label: "Proveedor",
+      format: (value, item) => {
+        // Mostrar nombre del proveedor si está disponible
+        if (item.proveedor && item.proveedor.nombreProveedor) {
+          return item.proveedor.nombreProveedor;
+        }
+        // Si solo tiene ID, mostrar "Proveedor #ID"
+        if (item.idProveedor) {
+          return `Proveedor #${item.idProveedor}`;
+        }
+        return "Sin proveedor";
+      },
     },
     {
       key: "precio",
       label: "Precio",
-      format: (value) => formatCurrency(value),
+      format: (value) => formatCurrency(value || 0),
     },
     {
-      key: "cantidad",
+      key: "cantidadStock",
       label: "Stock",
-      format: (value) => {
+      format: (value, item) => {
+        const cantidad = value || (item.stock && item.stock.cantidad) || 0;
         const className =
-          value === 0
+          cantidad === 0
             ? "text-danger"
-            : value < 10
+            : cantidad < 10
             ? "text-warning"
             : "text-success";
-        return `<span class="${className}">${value} unidades</span>`;
+        return `<span class="${className}">${cantidad} unidades</span>`;
       },
     },
   ];
@@ -97,7 +137,9 @@ function renderProductosTable(productos) {
     },
   ];
 
-  renderTable("productosTable", productos, columns, actions);
+  // Mapear productos para que tengan el campo 'id' que espera renderTable
+  const productosConId = productos.map(p => ({ ...p, id: p.idProducto }));
+  renderTable("productosTable", productosConId, columns, actions);
 }
 
 function openAddModal() {
@@ -107,52 +149,107 @@ function openAddModal() {
   openModal("productoModal");
 }
 
-function editProducto(id) {
-  const producto = getRecord("productos", id);
-  if (!producto) {
-    showAlert("Producto no encontrado", "danger");
-    return;
+async function editProducto(id) {
+  // Cargar desde API para edición
+  try {
+    const producto = await apiGet(`/api/productos/${id}`);
+    currentProductoData = producto;
+    if (DEBUG_PRODUCTOS) console.log('[Productos] editProducto carga', { id, producto });
+
+    document.getElementById("modalTitle").textContent = "Editar Producto";
+    currentProductoId = id;
+
+    const form = document.getElementById("productoForm");
+    if (form.querySelector('[name="id"]')) form.querySelector('[name="id"]').value = producto.idProducto || producto.id;
+    const nombreInput = form.querySelector('[name="nombreProducto"]');
+    const descInput = form.querySelector('[name="descripcion"]');
+    const codigoInput = form.querySelector('[name="codigo"]');
+    const precioInput = form.querySelector('[name="precio"]');
+    const categoriaSel = form.querySelector('[name="categoria"]');
+    if (nombreInput) nombreInput.value = producto.nombreProducto || '';
+    if (descInput) descInput.value = producto.descripcion || '';
+    if (codigoInput) codigoInput.value = producto.codigoProducto || '';
+    if (precioInput) precioInput.value = (producto.precio != null ? producto.precio : 0);
+    if (categoriaSel) categoriaSel.value = (producto.categoria || '').toUpperCase();
+    
+    // Cargar proveedores y setear el valor del proveedor
+    const provSel = form.querySelector('[name="IdProveedor"]');
+    if (provSel) {
+      await loadProveedores();
+      
+      // Obtener el ID del proveedor (puede venir en diferentes campos)
+      const provId = producto.proveedor?.idProveedor || producto.idProveedor || producto.IdProveedor;
+      
+      if (DEBUG_PRODUCTOS) {
+        console.log('[Productos] configurando proveedor', {
+          'producto completo': producto,
+          'producto.proveedor': producto.proveedor,
+          'producto.idProveedor': producto.idProveedor,
+          'producto.IdProveedor': producto.IdProveedor,
+          'todas las propiedades': Object.keys(producto),
+          provId: provId,
+          'opciones disponibles': Array.from(provSel.options).map(opt => ({ value: opt.value, text: opt.textContent }))
+        });
+      }
+      
+      // Setear el valor si existe
+      if (provId) {
+        provSel.value = provId.toString();
+        if (DEBUG_PRODUCTOS) console.log('[Productos] proveedor seleccionado:', provId);
+      } else {
+        provSel.value = '';
+        if (DEBUG_PRODUCTOS) console.log('[Productos] sin proveedor asignado');
+      }
+    }
+
+    closeModal("viewProductoModal");
+    openModal("productoModal");
+  } catch (e) {
+    showAlert("No se pudo cargar el producto", "danger");
   }
-
-  document.getElementById("modalTitle").textContent = "Editar Producto";
-  currentProductoId = id;
-
-  const form = document.getElementById("productoForm");
-  form.querySelector('[name="id"]').value = producto.id;
-  form.querySelector('[name="nombreProducto"]').value = producto.nombreProducto;
-  form.querySelector('[name="descripcion"]').value = producto.descripcion;
-  form.querySelector('[name="precio"]').value = producto.precio;
-  form.querySelector('[name="IdProveedor"]').value = producto.IdProveedor;
-
-  openModal("productoModal");
 }
 
-function viewProducto(id) {
-  const producto = getRecord("productos", id);
-  if (!producto) {
-    showAlert("Producto no encontrado", "danger");
-    return;
-  }
+async function viewProducto(id) {
+  try {
+    const producto = await apiGet(`/api/productos/${id}`);
+    
+    if (!producto) {
+      showAlert("Producto no encontrado", "danger");
+      return;
+    }
 
-  currentProductoId = id;
+    currentProductoId = id;
 
-  const stock = loadData("stock");
-  const stockInfo = stock.find((s) => s.idProducto === id);
-  const cantidadStock = stockInfo ? stockInfo.cantidad : 0;
+    const cantidadStock = producto.cantidadStock || (producto.stock && producto.stock.cantidad) || 0;
 
-  const detailsHtml = `
+    const detailsHtml = `
         <div class="producto-details">
+            <div class="detail-row">
+                <strong>ID:</strong> ${producto.idProducto}
+            </div>
+            <div class="detail-row">
+                <strong>Código:</strong> ${producto.codigoProducto || 'N/A'}
+            </div>
             <div class="detail-row">
                 <strong>Nombre:</strong> ${producto.nombreProducto}
             </div>
             <div class="detail-row">
-                <strong>Descripción:</strong> ${producto.descripcion}
+                <strong>Descripción:</strong> ${producto.descripcion || 'N/A'}
             </div>
             <div class="detail-row">
-                <strong>Precio:</strong> ${formatCurrency(producto.precio)}
+                <strong>Categoría:</strong> ${producto.categoria || 'N/A'}
             </div>
             <div class="detail-row">
-                <strong>Stock Actual:</strong>
+                <strong>Marca:</strong> ${producto.marca || 'N/A'}
+            </div>
+            <div class="detail-row">
+                <strong>Precio:</strong> ${formatCurrency(producto.precio || 0)}
+            </div>
+            <div class="detail-row">
+                <strong>Precio Compra:</strong> ${formatCurrency(producto.precioCompra || 0)}
+            </div>
+            <div class="detail-row">
+                <strong>Stock:</strong> 
                 <span class="${
                   cantidadStock === 0
                     ? "text-danger"
@@ -160,8 +257,17 @@ function viewProducto(id) {
                     ? "text-warning"
                     : "text-success"
                 }">
-                    ${cantidadStock} unidades
+                    ${cantidadStock} ${producto.unidadMedida || 'unidades'}
                 </span>
+            </div>
+            <div class="detail-row">
+                <strong>Stock Mínimo:</strong> ${producto.stockMinimo || 0}
+            </div>
+            <div class="detail-row">
+                <strong>Proveedor:</strong> ${
+                  producto.proveedor?.nombreProveedor || 
+                  (producto.idProveedor ? `Proveedor #${producto.idProveedor}` : 'Sin proveedor')
+                }
             </div>
         </div>
         <style>
@@ -178,8 +284,12 @@ function viewProducto(id) {
         </style>
     `;
 
-  document.getElementById("productoDetails").innerHTML = detailsHtml;
-  openModal("viewProductoModal");
+    document.getElementById("productoDetails").innerHTML = detailsHtml;
+    openModal("viewProductoModal");
+  } catch (e) {
+    if (DEBUG_PRODUCTOS) console.error('[Productos] error viewProducto', e);
+    showAlert("No se pudo cargar el producto", "danger");
+  }
 }
 
 function editFromView() {
@@ -190,62 +300,59 @@ function editFromView() {
 function manageStock() {
   if (currentProductoId) {
     closeModal("viewProductoModal");
-    window.location.href = `stock.html?producto=${currentProductoId}`;
+    window.location.href = `/stock?producto=${currentProductoId}`;
   }
 }
 
-function deleteProducto(id) {
-  const producto = getRecord("productos", id);
-  if (!producto) {
-    showAlert("Producto no encontrado", "danger");
-    return;
-  }
-
-  if (
-    confirmDelete(
-      `¿Estás seguro de que deseas eliminar el producto "${producto.nombreProducto}"?`
-    )
-  ) {
-    const facturas = loadData("facturas");
-    const detalleFacturas = loadData("detalleFacturas") || [];
-    const pedidos = loadData("pedidos");
-    const detallePedidos = loadData("detallePedidos") || [];
-
-    const isUsedInFacturas = detalleFacturas.some((df) => df.idProducto === id);
-    const isUsedInPedidos = detallePedidos.some((dp) => dp.idProducto === id);
-
-    if (isUsedInFacturas || isUsedInPedidos) {
-      showAlert(
-        "No se puede eliminar el producto porque está asociado a facturas o pedidos",
-        "danger"
-      );
+async function deleteProducto(id) {
+  try {
+    // Obtener datos del producto desde la API
+    const producto = await apiGet(`/api/productos/${id}`);
+    if (!producto) {
+      showAlert("Producto no encontrado", "danger");
       return;
     }
 
-    deleteRecord("productos", id);
+    if (
+      confirmDelete(
+        `¿Estás seguro de que deseas eliminar el producto "${producto.nombreProducto}"?`
+      )
+    ) {
+      if (DEBUG_PRODUCTOS) console.log('[Productos] eliminando producto', id);
+      
+      // Llamar a la API para eliminar
+      await apiDelete(`/api/productos/${id}`);
+      
+      // Recargar la tabla
+      await loadProductos();
+      showAlert("Producto eliminado correctamente", "success");
 
-    const stock = loadData("stock");
-    const updatedStock = stock.filter((s) => s.idProducto !== id);
-    saveData("stock", updatedStock);
-
-    loadProductos();
-    showAlert("Producto eliminado correctamente", "success");
-
-    if (typeof addActivity === "function") {
-      addActivity(
-        "producto",
-        "Producto eliminado",
-        `Se eliminó el producto "${producto.nombreProducto}"`
-      );
+      if (typeof addActivity === "function") {
+        addActivity(
+          "producto",
+          "Producto eliminado",
+          `${producto.nombreProducto} fue eliminado del catálogo`
+        );
+      }
+    }
+  } catch (e) {
+    if (DEBUG_PRODUCTOS) console.error('[Productos] error al eliminar', e);
+    if (e.status === 404) {
+      showAlert("Producto no encontrado", "danger");
+    } else if (e.status === 409) {
+      showAlert("No se puede eliminar el producto porque está siendo usado en facturas o pedidos", "danger");
+    } else {
+      showAlert(e.data?.mensaje || `Error al eliminar: ${e.message}`, "danger");
     }
   }
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   const validationRules = [
     { field: "nombreProducto", label: "Nombre", required: true, minLength: 3 },
+    { field: "codigo", label: "Código", required: true, minLength: 3 },
     {
       field: "descripcion",
       label: "Descripción",
@@ -254,6 +361,8 @@ function handleFormSubmit(e) {
     },
     { field: "precio", label: "Precio", required: true, type: "number" },
     { field: "IdProveedor", label: "Proveedor", required: true },
+    // Si el formulario tiene campo categoría, validar también
+    // { field: "categoria", label: "Categoría", required: true },
   ];
 
   if (!validateForm("productoForm", validationRules)) {
@@ -261,14 +370,38 @@ function handleFormSubmit(e) {
   }
 
   const formData = new FormData(e.target);
+  const provIdStr = formData.get("IdProveedor");
+  const precioVal = parseFloat(formData.get("precio") || (currentProductoData?.precio || 0));
+  const precioCompraRaw = formData.get("precioCompra");
+  const precioCompraParsed = precioCompraRaw ? parseFloat(precioCompraRaw) : (currentProductoData?.precioCompra ?? null);
+  const precioCompraFinal = (Number.isFinite(precioCompraParsed) && precioCompraParsed > 0)
+    ? precioCompraParsed
+    : (Number.isFinite(precioVal) && precioVal > 0 ? precioVal : 0.01);
   const productoData = {
-    nombreProducto: formData.get("nombreProducto").trim(),
-    descripcion: formData.get("descripcion").trim(),
-    precio: parseFloat(formData.get("precio")),
-    IdProveedor: parseInt(formData.get("IdProveedor")),
+    nombreProducto: (formData.get("nombreProducto") || currentProductoData?.nombreProducto || '').toString().trim(),
+    descripcion: (formData.get("descripcion") || currentProductoData?.descripcion || '').toString().trim(),
+    codigoProducto: (formData.get("codigo") || currentProductoData?.codigoProducto || '').toString().trim(),
+    categoria: ((formData.get("categoria") || currentProductoData?.categoria || 'OTROS') + '').toUpperCase(),
+    marca: (formData.get("marca") || currentProductoData?.marca || null),
+    precio: precioVal,
+    precioCompra: precioCompraFinal,
+    unidadMedida: (formData.get("unidadMedida") || currentProductoData?.unidadMedida || 'UNIDAD'),
+    stockMinimo: parseInt(formData.get("stockMinimo") || (currentProductoData?.stockMinimo || 0), 10),
+    proveedor: provIdStr ? { idProveedor: parseInt(provIdStr, 10) } : (currentProductoData?.proveedor ? { idProveedor: currentProductoData.proveedor.idProveedor } : null),
   };
+  if (DEBUG_PRODUCTOS) console.log('[Productos] submit payload', { currentProductoId, productoData });
 
-  const productos = loadData("productos");
+  // Validación adicional: en creación, el código es obligatorio y único
+  if (!currentProductoId && (!productoData.codigoProducto || productoData.codigoProducto.length < 3)) {
+    showAlert("El código de producto es requerido (mín. 3 caracteres)", 'danger');
+    return;
+  }
+  if (!Number.isFinite(productoData.precio) || productoData.precio <= 0) {
+    showAlert("El precio debe ser mayor que 0", 'danger');
+    return;
+  }
+
+  const productos = [];
   const nameExists = productos.some(
     (p) =>
       p.nombreProducto.toLowerCase() ===
@@ -284,26 +417,23 @@ function handleFormSubmit(e) {
   let result;
   let actionType;
 
-  if (currentProductoId) {
-    productoData.id = currentProductoId;
-    result = updateRecord("productos", productoData);
-    actionType = "actualizado";
-  } else {
-    productoData.id = generateId(productos);
-    result = addRecord("productos", productoData);
-    actionType = "agregado";
-
-    const stock = loadData("stock");
-    const stockData = {
-      id: generateId(stock),
-      idProducto: productoData.id,
-      cantidad: 0,
-    };
-    addRecord("stock", stockData);
+  try {
+    if (currentProductoId) {
+      result = await apiPut(`/api/productos/${currentProductoId}`, productoData);
+      actionType = "actualizado";
+    } else {
+      result = await apiPost('/api/productos', productoData);
+      actionType = "agregado";
+    }
+  } catch (e) {
+    if (DEBUG_PRODUCTOS) console.error('[Productos] error al guardar', e);
+    showAlert(e.data?.mensaje || `Error al guardar: ${e.message}`, 'danger');
+    return;
   }
 
   if (result) {
-    loadProductos();
+    if (DEBUG_PRODUCTOS) console.log('[Productos] guardado OK', { actionType });
+    await loadProductos();
     closeModal("productoModal");
     clearForm("productoForm");
     showAlert(`Producto ${actionType} correctamente`, "success");
@@ -318,6 +448,7 @@ function handleFormSubmit(e) {
 
     currentProductoId = null;
   } else {
+    if (DEBUG_PRODUCTOS) console.warn('[Productos] guardado sin resultado');
     showAlert("Error al guardar el producto", "danger");
   }
 }

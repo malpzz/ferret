@@ -35,22 +35,20 @@ function initializeStockPage() {
   }
 }
 
-function loadStock() {
-  const productos = loadData("productos");
-  const stock = loadData("stock");
-
-  const stockData = productos.map((producto) => {
-    const stockInfo = stock.find((s) => s.idProducto === producto.id);
-    return {
-      id: producto.id,
-      nombre: producto.nombreProducto,
-      descripcion: producto.descripcion,
-      precio: producto.precio,
-      cantidad: stockInfo ? stockInfo.cantidad : 0,
-    };
-  });
-
-  renderStockTable(stockData);
+async function loadStock() {
+  try {
+    const productos = await apiGet('/api/productos');
+    const stockData = productos.map((p) => ({
+      id: p.idProducto || p.id,
+      nombreProducto: p.nombreProducto,
+      descripcion: p.descripcion,
+      precio: p.precio || 0,
+      cantidad: (p.stock && p.stock.cantidad) || p.cantidadStock || 0,
+    }));
+    renderStockTable(stockData);
+  } catch (e) {
+    showAlert(`Error cargando stock: ${e.message}`, 'danger');
+  }
 }
 
 function renderStockTable(stockData) {
@@ -121,21 +119,16 @@ function renderStockTable(stockData) {
   }, 100);
 }
 
-function filterStock() {
+async function filterStock() {
   const filter = document.getElementById("filterStock").value;
-  const productos = loadData("productos");
-  const stock = loadData("stock");
-
-  let filteredData = productos.map((producto) => {
-    const stockInfo = stock.find((s) => s.idProducto === producto.id);
-    return {
-      id: producto.id,
-      nombre: producto.nombreProducto,
-      descripcion: producto.descripcion,
-      precio: producto.precio,
-      cantidad: stockInfo ? stockInfo.cantidad : 0,
-    };
-  });
+  const productos = await apiGet('/api/productos');
+  let filteredData = productos.map((p) => ({
+    id: p.idProducto || p.id,
+    nombreProducto: p.nombreProducto,
+    descripcion: p.descripcion,
+    precio: p.precio || 0,
+    cantidad: (p.stock && p.stock.cantidad) || p.cantidadStock || 0,
+  }));
 
   switch (filter) {
     case "bajo":
@@ -154,8 +147,8 @@ function filterStock() {
   renderStockTable(filteredData);
 }
 
-function loadProductsSelect() {
-  const productos = loadData("productos");
+async function loadProductsSelect() {
+  const productos = await apiGet('/api/productos');
   const select = document.getElementById("producto");
 
   select.innerHTML = '<option value="">Seleccione un producto</option>';
@@ -249,7 +242,7 @@ function quickExit(productId) {
 }
 
 function viewHistory(productId) {
-  const producto = getRecord("productos", productId);
+  const producto = null;
   const movements = JSON.parse(localStorage.getItem("stockMovements") || "[]");
   const productMovements = movements.filter((m) => m.idProducto === productId);
 

@@ -1,10 +1,10 @@
 ﻿<!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GestiÃ³n de Pedidos - Sistema FerreterÃ­a</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -15,17 +15,17 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="../index.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                    <li><a href="clientes.html"><i class="fas fa-users"></i> Clientes</a></li>
-                    <li><a href="productos.html"><i class="fas fa-box"></i> Productos</a></li>
-                    <li><a href="stock.html"><i class="fas fa-warehouse"></i> Stock</a></li>
-                    <li><a href="facturas.html"><i class="fas fa-file-invoice"></i> Facturas</a></li>
-                    <li><a href="pedidos.html" class="active"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
-                    <li><a href="empleados.html"><i class="fas fa-user-tie"></i> Empleados</a></li>
-                    <li><a href="proveedores.html"><i class="fas fa-truck"></i> Proveedores</a></li>
-                    <li><a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a></li>
-                    <li><a href="roles.html"><i class="fas fa-shield-alt"></i> Roles</a></li>
-                    <li><a href="horarios.html"><i class="fas fa-clock"></i> Horarios</a></li>
+                    <li sec:authorize="isAuthenticated()"><a th:href="@{/dashboard}"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/clientes}"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/productos}"><i class="fas fa-box"></i> Productos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/stock}"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/facturas}"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/pedidos}" class="active"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/empleados}"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/proveedores}"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/usuarios}"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/roles}"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/horarios}"><i class="fas fa-clock"></i> Horarios</a></li>
                 </ul>
             </nav>
         </aside>
@@ -106,10 +106,11 @@
                     <div class="form-group col-md-4">
                         <label for="estado">Estado *</label>
                         <select id="estado" name="estado" class="form-control" required>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="enviado">Enviado</option>
-                            <option value="entregado">Entregado</option>
-                            <option value="cancelado">Cancelado</option>
+                            <option value="PENDIENTE">Pendiente</option>
+                            <option value="APROBADO">Aprobado</option>
+                            <option value="ENVIADO">Enviado</option>
+                            <option value="RECIBIDO">Recibido</option>
+                            <option value="CANCELADO">Cancelado</option>
                         </select>
                     </div>
                 </div>
@@ -326,8 +327,8 @@
         }
     </style>
 
-    <script src="../js/common.js"></script>
-    <script src="../js/pedidos.js"></script>
+    <script th:src="@{/js/common.js}"></script>
+    <script th:src="@{/js/pedidos.js}"></script>
 </body>
 </html>
 

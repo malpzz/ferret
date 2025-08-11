@@ -3,6 +3,7 @@ package com.ferreteria.sistema.controller.rest;
 import com.ferreteria.sistema.entity.Cliente;
 import com.ferreteria.sistema.service.ClienteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -163,6 +164,17 @@ public class ClienteRestController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse("Error", e.getMessage()));
+        } catch (DataAccessException e) {
+            // Verificar si es un error de constraint (facturas asociadas)
+            String mensaje = e.getMessage();
+            if (mensaje != null && (mensaje.contains("facturas asociadas") || 
+                                   mensaje.contains("ORA-20012") ||
+                                   mensaje.contains("tiene facturas"))) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("Conflicto", "No se puede eliminar el cliente porque tiene facturas asociadas"));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Error de base de datos", mensaje));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error interno", "Error al eliminar el cliente"));

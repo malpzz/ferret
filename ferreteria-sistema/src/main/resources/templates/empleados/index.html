@@ -1,10 +1,10 @@
 ﻿<!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GestiÃ³n de Empleados - Sistema FerreterÃ­a</title>
-    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -15,17 +15,17 @@
             </div>
             <nav class="sidebar-nav">
                 <ul>
-                    <li><a href="../index.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                    <li><a href="clientes.html"><i class="fas fa-users"></i> Clientes</a></li>
-                    <li><a href="productos.html"><i class="fas fa-box"></i> Productos</a></li>
-                    <li><a href="stock.html"><i class="fas fa-warehouse"></i> Stock</a></li>
-                    <li><a href="facturas.html"><i class="fas fa-file-invoice"></i> Facturas</a></li>
-                    <li><a href="pedidos.html"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
-                    <li><a href="empleados.html" class="active"><i class="fas fa-user-tie"></i> Empleados</a></li>
-                    <li><a href="proveedores.html"><i class="fas fa-truck"></i> Proveedores</a></li>
-                    <li><a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a></li>
-                    <li><a href="roles.html"><i class="fas fa-shield-alt"></i> Roles</a></li>
-                    <li><a href="horarios.html"><i class="fas fa-clock"></i> Horarios</a></li>
+                    <li sec:authorize="isAuthenticated()"><a th:href="@{/dashboard}"><i class="fas fa-home"></i> Dashboard</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/clientes}"><i class="fas fa-users"></i> Clientes</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/productos}"><i class="fas fa-box"></i> Productos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/stock}"><i class="fas fa-warehouse"></i> Stock</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')"><a th:href="@{/facturas}"><i class="fas fa-file-invoice"></i> Facturas</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/pedidos}"><i class="fas fa-shopping-cart"></i> Pedidos</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/empleados}" class="active"><i class="fas fa-user-tie"></i> Empleados</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO')"><a th:href="@{/proveedores}"><i class="fas fa-truck"></i> Proveedores</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/usuarios}"><i class="fas fa-user-cog"></i> Usuarios</a></li>
+                    <li sec:authorize="hasRole('ADMINISTRADOR')"><a th:href="@{/roles}"><i class="fas fa-shield-alt"></i> Roles</a></li>
+                    <li sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE')"><a th:href="@{/horarios}"><i class="fas fa-clock"></i> Horarios</a></li>
                 </ul>
             </nav>
         </aside>
@@ -95,16 +95,32 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="cedula">Cédula *</label>
+                    <input type="text" id="cedula" name="cedula" class="form-control" required>
+                </div>
+
+                <div class="form-group">
                     <label for="puesto">Puesto *</label>
                     <select id="puesto" name="puesto" class="form-control" required>
                         <option value="">Seleccione un puesto</option>
                         <option value="Vendedor">Vendedor</option>
                         <option value="Cajero">Cajero</option>
+                        <option value="Cajera">Cajera</option>
                         <option value="Almacenista">Almacenista</option>
                         <option value="Supervisor">Supervisor</option>
                         <option value="Gerente">Gerente</option>
                         <option value="Administrativo">Administrativo</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="salario">Salario</label>
+                    <input type="number" id="salario" name="salario" class="form-control" step="0.01" min="0">
                 </div>
 
                 <div class="d-flex justify-between gap-2 mt-3">
@@ -145,8 +161,8 @@
         </div>
     </div>
 
-    <script src="../js/common.js"></script>
-    <script src="../js/empleados.js"></script>
+    <script th:src="@{/js/common.js}"></script>
+    <script th:src="@{/js/empleados.js}"></script>
 </body>
 </html>
 

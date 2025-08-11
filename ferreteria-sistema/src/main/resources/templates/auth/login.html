@@ -2,31 +2,186 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title th:text="${titulo}">Iniciar SesiÃ³n</title>
+    <title th:text="${titulo}">Iniciar Sesión - Sistema Ferretería</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-<div class="container" style="max-width:420px;margin:40px auto;">
-    <h2>Iniciar SesiÃ³n</h2>
-    <form th:action="@{/login}" method="post">
-        <div class="form-group">
-            <label for="username">Usuario</label>
-            <input id="username" name="username" class="form-control" required/>
+<body class="auth-body">
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <i class="fas fa-tools auth-icon"></i>
+            <h2>Iniciar Sesión</h2>
+            <p>Accede a tu cuenta del sistema</p>
         </div>
-        <div class="form-group" style="margin-top:10px;">
-            <label for="password">ContraseÃ±a</label>
-            <input id="password" type="password" name="password" class="form-control" required/>
+        
+        <form th:action="@{/login}" method="post" class="auth-form">
+            <div class="form-group">
+                <label for="username">
+                    <i class="fas fa-user"></i> Usuario
+                </label>
+                <input id="username" name="username" class="form-control" placeholder="Ingresa tu usuario" required/>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-lock"></i> Contraseña
+                </label>
+                <input id="password" type="password" name="password" class="form-control" placeholder="Ingresa tu contraseña" required/>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-auth">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </button>
+            
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        </form>
+        
+        <div class="auth-messages">
+            <div th:if="${param.error}" class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> Credenciales inválidas
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success">
+                <i class="fas fa-check-circle"></i> Sesión cerrada correctamente
+            </div>
+            <div th:if="${param.expired}" class="alert alert-warning">
+                <i class="fas fa-clock"></i> Sesión expirada
+            </div>
         </div>
-        <div style="margin-top:16px;">
-            <button type="submit" class="btn btn-primary">Entrar</button>
+        
+        <div class="auth-footer">
+            <p>¿No tienes cuenta? <a th:href="@{/register}" class="auth-link">Regístrate aquí</a></p>
+            <p><a th:href="@{/}" class="auth-link-secondary">← Volver al inicio</a></p>
         </div>
-    </form>
-    <div th:if="${param.error}" style="color:#c00;margin-top:12px;">Credenciales invÃ¡lidas</div>
-    <div th:if="${param.logout}" style="color:#090;margin-top:8px;">SesiÃ³n cerrada</div>
-    <div th:if="${param.expired}" style="color:#c60;margin-top:8px;">SesiÃ³n expirada</div>
-    <div style="margin-top:12px;"><a th:href="@{/}">Volver</a></div>
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    </div>
 </div>
+
+<style>
+.auth-body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    padding: 40px;
+    text-align: center;
+}
+
+.auth-header {
+    margin-bottom: 32px;
+}
+
+.auth-icon {
+    font-size: 48px;
+    color: #667eea;
+    margin-bottom: 16px;
+}
+
+.auth-header h2 {
+    color: #333;
+    margin: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.auth-header p {
+    color: #666;
+    margin: 0;
+    font-size: 14px;
+}
+
+.auth-form .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 500;
+}
+
+.auth-form label i {
+    margin-right: 8px;
+    color: #667eea;
+}
+
+.btn-auth {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+.auth-messages {
+    margin: 20px 0;
+}
+
+.auth-messages .alert {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: none;
+}
+
+.alert-danger {
+    background: #fee;
+    color: #c53030;
+}
+
+.alert-success {
+    background: #f0fff4;
+    color: #38a169;
+}
+
+.alert-warning {
+    background: #fffaf0;
+    color: #d69e2e;
+}
+
+.auth-footer {
+    margin-top: 24px;
+    font-size: 14px;
+}
+
+.auth-footer p {
+    margin: 8px 0;
+}
+
+.auth-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+.auth-link-secondary {
+    color: #666;
+    text-decoration: none;
+}
+
+.auth-link-secondary:hover {
+    color: #333;
+}
+</style>
 </body>
 </html>
 

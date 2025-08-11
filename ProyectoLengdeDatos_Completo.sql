@@ -396,29 +396,47 @@ END;
 
 -- TRIGGER 8: Actualizar total del pedido
 CREATE OR REPLACE TRIGGER trg_pedidos_actualizar_total
-    AFTER INSERT OR UPDATE OR DELETE ON detallePedido
-    FOR EACH ROW
-DECLARE
-    v_total NUMBER(12,2);
-    v_id_pedido NUMBER;
+FOR INSERT OR UPDATE OR DELETE ON detallePedido
+COMPOUND TRIGGER
+  TYPE t_ids IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+  g_ids t_ids;
+
+  PROCEDURE add_id(p_id NUMBER) IS
 BEGIN
-    -- Determina el ID del pedido afectado dependiendo de la operaciÃ³n
-    IF INSERTING OR UPDATING THEN
-        v_id_pedido := :NEW.IdPedido;
-    ELSIF DELETING THEN
-        v_id_pedido := :OLD.IdPedido;
+    IF p_id IS NOT NULL THEN
+      g_ids(g_ids.COUNT+1) := p_id;
     END IF;
-    
-    -- Calcula el nuevo total del pedido sumando todos los subtotales
+  END;
+
+  BEFORE STATEMENT IS BEGIN g_ids.DELETE; END BEFORE STATEMENT;
+
+  AFTER EACH ROW IS
+  BEGIN
+    IF INSERTING OR UPDATING THEN
+      add_id(:NEW.IdPedido);
+    ELSIF DELETING THEN
+      add_id(:OLD.IdPedido);
+    END IF;
+  END AFTER EACH ROW;
+
+  AFTER STATEMENT IS
+  BEGIN
+    IF g_ids.COUNT > 0 THEN
+      FOR i IN 1..g_ids.COUNT LOOP
+        DECLARE v_total NUMBER(12,2);
+        BEGIN
     SELECT NVL(SUM(precioUni * cantidad), 0)
     INTO v_total
     FROM detallePedido
-    WHERE IdPedido = v_id_pedido;
-    
-    -- Actualiza el total en la tabla Pedidos
+           WHERE IdPedido = g_ids(i);
     UPDATE Pedidos
-    SET total = v_total, fecha_modificacion = SYSDATE
-    WHERE IdPedido = v_id_pedido;
+             SET total = v_total,
+                 fecha_modificacion = SYSDATE
+           WHERE IdPedido = g_ids(i);
+        END;
+      END LOOP;
+    END IF;
+  END AFTER STATEMENT;
 END;
 /
 
@@ -436,38 +454,51 @@ END;
 
 -- TRIGGER 10: Actualizar total de la factura
 CREATE OR REPLACE TRIGGER trg_factura_actualizar_total
-    AFTER INSERT OR UPDATE OR DELETE ON detalleFactura
-    FOR EACH ROW
-DECLARE
-    v_subtotal NUMBER(12,2);
-    v_impuesto NUMBER(12,2);
-    v_total NUMBER(12,2);
-    v_id_factura NUMBER;
+FOR INSERT OR UPDATE OR DELETE ON detalleFactura
+COMPOUND TRIGGER
+  TYPE t_ids IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+  g_ids t_ids;
+
+  PROCEDURE add_id(p_id NUMBER) IS
 BEGIN
-    -- Determina el ID de la factura afectada
-    IF INSERTING OR UPDATING THEN
-        v_id_factura := :NEW.IdFactura;
-    ELSIF DELETING THEN
-        v_id_factura := :OLD.IdFactura;
+    IF p_id IS NOT NULL THEN
+      g_ids(g_ids.COUNT+1) := p_id;
     END IF;
-    
-    -- Calcula el subtotal de la factura
+  END;
+
+  BEFORE STATEMENT IS BEGIN g_ids.DELETE; END BEFORE STATEMENT;
+
+  AFTER EACH ROW IS
+  BEGIN
+    IF INSERTING OR UPDATING THEN
+      add_id(:NEW.IdFactura);
+    ELSIF DELETING THEN
+      add_id(:OLD.IdFactura);
+    END IF;
+  END AFTER EACH ROW;
+
+  AFTER STATEMENT IS
+  BEGIN
+    IF g_ids.COUNT > 0 THEN
+      FOR i IN 1..g_ids.COUNT LOOP
+        DECLARE v_sub NUMBER(12,2); v_imp NUMBER(12,2); v_tot NUMBER(12,2);
+        BEGIN
     SELECT NVL(SUM((precioUni * cantidad) - descuento_item), 0)
-    INTO v_subtotal
+            INTO v_sub
     FROM detalleFactura
-    WHERE IdFactura = v_id_factura;
-    
-    -- Calcula el impuesto (15% del subtotal)
-    v_impuesto := v_subtotal * 0.15;
-    v_total := v_subtotal + v_impuesto;
-    
-    -- Actualiza los valores en la tabla Factura
+           WHERE IdFactura = g_ids(i);
+          v_imp := v_sub * 0.15;
+          v_tot := v_sub + v_imp;
     UPDATE Factura
-    SET subtotal = v_subtotal,
-        impuesto = v_impuesto,
-        total = v_total,
+             SET subtotal = v_sub,
+                 impuesto = v_imp,
+                 total = v_tot,
         fecha_modificacion = SYSDATE
-    WHERE IdFactura = v_id_factura;
+           WHERE IdFactura = g_ids(i);
+        END;
+      END LOOP;
+    END IF;
+  END AFTER STATEMENT;
 END;
 /
 
@@ -566,6 +597,14 @@ CREATE OR REPLACE PACKAGE PKG_FERRETERIA AS
     PROCEDURE sp_actualizar_limites_credito; -- CON CURSOR
     FUNCTION fn_obtener_cliente(p_id NUMBER) RETURN SYS_REFCURSOR;
     FUNCTION fn_listar_clientes RETURN SYS_REFCURSOR;
+    -- Wrappers compatibles con JDBC (sin OUT RECORD/BOOLEAN)
+    PROCEDURE sp_insertar_cliente_jdbc(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                      p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                      p_tipo_cliente VARCHAR2);
+    PROCEDURE sp_actualizar_cliente_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                         p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                         p_cedula VARCHAR2, p_tipo_cliente VARCHAR2);
+    PROCEDURE sp_eliminar_cliente_jdbc(p_id NUMBER);
     
     -- Procedimientos CRUD para Empleados
     PROCEDURE sp_insertar_empleado(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
@@ -578,6 +617,14 @@ CREATE OR REPLACE PACKAGE PKG_FERRETERIA AS
     PROCEDURE sp_eliminar_empleado(p_id NUMBER, p_resultado OUT t_resultado);
     FUNCTION fn_obtener_empleado(p_id NUMBER) RETURN SYS_REFCURSOR;
     FUNCTION fn_listar_empleados RETURN SYS_REFCURSOR;
+    -- Wrappers compatibles con JDBC
+    PROCEDURE sp_insertar_empleado_jdbc(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                        p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                        p_puesto VARCHAR2, p_salario NUMBER);
+    PROCEDURE sp_actualizar_empleado_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                          p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                          p_cedula VARCHAR2, p_puesto VARCHAR2, p_salario NUMBER);
+    PROCEDURE sp_eliminar_empleado_jdbc(p_id NUMBER);
     
     -- Procedimientos CRUD para Proveedores
     PROCEDURE sp_insertar_proveedor(p_nombre VARCHAR2, p_direccion VARCHAR2, p_telefono VARCHAR2,
@@ -589,6 +636,14 @@ CREATE OR REPLACE PACKAGE PKG_FERRETERIA AS
     PROCEDURE sp_eliminar_proveedor(p_id NUMBER, p_resultado OUT t_resultado);
     FUNCTION fn_obtener_proveedor(p_id NUMBER) RETURN SYS_REFCURSOR;
     FUNCTION fn_listar_proveedores RETURN SYS_REFCURSOR;
+    -- Wrappers compatibles con JDBC
+    PROCEDURE sp_insertar_proveedor_jdbc(p_nombre VARCHAR2, p_direccion VARCHAR2, p_telefono VARCHAR2,
+                                         p_email VARCHAR2, p_contacto VARCHAR2, p_ruc VARCHAR2,
+                                         p_condiciones_pago VARCHAR2);
+    PROCEDURE sp_actualizar_proveedor_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_direccion VARCHAR2,
+                                           p_telefono VARCHAR2, p_email VARCHAR2, p_contacto VARCHAR2,
+                                           p_ruc VARCHAR2, p_condiciones_pago VARCHAR2);
+    PROCEDURE sp_eliminar_proveedor_jdbc(p_id NUMBER);
     
     -- Procedimientos CRUD para Productos (CON CURSOR)
     PROCEDURE sp_insertar_producto(p_nombre VARCHAR2, p_descripcion VARCHAR2, p_codigo VARCHAR2,
@@ -603,6 +658,16 @@ CREATE OR REPLACE PACKAGE PKG_FERRETERIA AS
     PROCEDURE sp_alertas_stock_minimo; -- CON CURSOR
     FUNCTION fn_obtener_producto(p_id NUMBER) RETURN SYS_REFCURSOR;
     FUNCTION fn_listar_productos RETURN SYS_REFCURSOR;
+    -- Wrappers compatibles con JDBC
+    PROCEDURE sp_insertar_producto_jdbc(p_nombre VARCHAR2, p_descripcion VARCHAR2, p_codigo VARCHAR2,
+                                        p_categoria VARCHAR2, p_marca VARCHAR2, p_precio NUMBER,
+                                        p_precio_compra NUMBER, p_unidad_medida VARCHAR2,
+                                        p_stock_minimo NUMBER, p_id_proveedor NUMBER);
+    PROCEDURE sp_actualizar_producto_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_descripcion VARCHAR2,
+                                          p_codigo VARCHAR2, p_categoria VARCHAR2, p_marca VARCHAR2,
+                                          p_precio NUMBER, p_precio_compra NUMBER, p_unidad_medida VARCHAR2,
+                                          p_stock_minimo NUMBER, p_id_proveedor NUMBER);
+    PROCEDURE sp_eliminar_producto_jdbc(p_id NUMBER);
     
     -- Funciones de consulta con EXPRESIONES REGULARES
     FUNCTION fn_buscar_clientes_por_email(p_patron VARCHAR2) RETURN SYS_REFCURSOR; -- EXPRESIÃ“N REGULAR
@@ -1064,6 +1129,38 @@ CREATE OR REPLACE PACKAGE BODY PKG_FERRETERIA AS
             p_resultado.mensaje := 'Error al eliminar cliente: ' || SQLERRM;
     END sp_eliminar_cliente;
     
+    -- Wrappers JDBC para Clientes
+    PROCEDURE sp_insertar_cliente_jdbc(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                      p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                      p_tipo_cliente VARCHAR2) AS
+        v_res t_resultado;
+    BEGIN
+        sp_insertar_cliente(p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_tipo_cliente, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20010, v_res.mensaje);
+        END IF;
+    END sp_insertar_cliente_jdbc;
+
+    PROCEDURE sp_actualizar_cliente_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                         p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                         p_cedula VARCHAR2, p_tipo_cliente VARCHAR2) AS
+        v_res t_resultado;
+    BEGIN
+        sp_actualizar_cliente(p_id, p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_tipo_cliente, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20011, v_res.mensaje);
+        END IF;
+    END sp_actualizar_cliente_jdbc;
+
+    PROCEDURE sp_eliminar_cliente_jdbc(p_id NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_eliminar_cliente(p_id, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20012, v_res.mensaje);
+        END IF;
+    END sp_eliminar_cliente_jdbc;
+    
     -- PROCEDIMIENTO CON CURSOR: Actualizar lÃ­mites de crÃ©dito de clientes
     PROCEDURE sp_actualizar_limites_credito AS
         -- Cursor para clientes VIP con historial de compras
@@ -1152,6 +1249,7 @@ CREATE OR REPLACE PACKAGE BODY PKG_FERRETERIA AS
             SELECT activo FROM Proveedores WHERE IdProveedor = p_id_proveedor;
         
         v_proveedor_activo NUMBER;
+        v_id_producto NUMBER;
     BEGIN
         -- Valida que el proveedor existe y estÃ¡ activo
         OPEN cur_validar_proveedor;
@@ -1173,15 +1271,16 @@ CREATE OR REPLACE PACKAGE BODY PKG_FERRETERIA AS
         
         CLOSE cur_validar_proveedor;
         
-        -- Inserta el nuevo producto
+        -- Inserta el nuevo producto y obtiene su Id
         INSERT INTO Productos (nombreProducto, descripcion, codigo_producto, categoria, marca,
                               precio, precio_compra, unidad_medida, stock_minimo, IdProveedor)
         VALUES (p_nombre, p_descripcion, p_codigo, p_categoria, p_marca,
-                p_precio, p_precio_compra, p_unidad_medida, p_stock_minimo, p_id_proveedor);
+                p_precio, p_precio_compra, p_unidad_medida, p_stock_minimo, p_id_proveedor)
+        RETURNING IdProducto INTO v_id_producto;
         
         -- Crea registro inicial de stock
         INSERT INTO Stock (cantidad, IdProducto)
-        VALUES (0, seq_numero_pedido.CURRVAL); -- Asume que el producto reciÃ©n insertado
+        VALUES (0, v_id_producto);
         
         COMMIT;
         p_resultado.exito := TRUE;
@@ -1197,6 +1296,245 @@ CREATE OR REPLACE PACKAGE BODY PKG_FERRETERIA AS
             p_resultado.exito := FALSE;
             p_resultado.mensaje := 'Error al insertar producto: ' || SQLERRM;
     END sp_insertar_producto;
+
+    -- PROCEDIMIENTO: Actualizar producto
+    PROCEDURE sp_actualizar_producto(p_id NUMBER, p_nombre VARCHAR2, p_descripcion VARCHAR2,
+                                     p_codigo VARCHAR2, p_categoria VARCHAR2, p_marca VARCHAR2,
+                                     p_precio NUMBER, p_precio_compra NUMBER, p_unidad_medida VARCHAR2,
+                                     p_stock_minimo NUMBER, p_id_proveedor NUMBER, p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+        v_prov_activo NUMBER;
+        CURSOR cur_validar_prov IS
+            SELECT activo FROM Proveedores WHERE IdProveedor = p_id_proveedor;
+    BEGIN
+        -- Verifica que el producto existe
+        SELECT COUNT(*) INTO v_count FROM Productos WHERE IdProducto = p_id;
+        IF v_count = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El producto no existe';
+            RETURN;
+        END IF;
+
+        -- Verifica proveedor
+        OPEN cur_validar_prov;
+        FETCH cur_validar_prov INTO v_prov_activo;
+        IF cur_validar_prov%NOTFOUND THEN
+            CLOSE cur_validar_prov;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El proveedor especificado no existe';
+            RETURN;
+        END IF;
+        CLOSE cur_validar_prov;
+
+        IF v_prov_activo = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El proveedor especificado está inactivo';
+            RETURN;
+        END IF;
+
+        -- Actualiza el producto
+        UPDATE Productos
+           SET nombreProducto = p_nombre,
+               descripcion = p_descripcion,
+               codigo_producto = p_codigo,
+               categoria = p_categoria,
+               marca = p_marca,
+               precio = p_precio,
+               precio_compra = p_precio_compra,
+               unidad_medida = p_unidad_medida,
+               stock_minimo = p_stock_minimo,
+               IdProveedor = p_id_proveedor,
+               fecha_modificacion = SYSDATE
+         WHERE IdProducto = p_id;
+
+        COMMIT;
+        p_resultado.exito := TRUE;
+        p_resultado.mensaje := 'Producto actualizado correctamente';
+
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Ya existe un producto con ese código';
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al actualizar producto: ' || SQLERRM;
+    END sp_actualizar_producto;
+
+    -- PROCEDIMIENTO: Eliminar producto
+    PROCEDURE sp_eliminar_producto(p_id NUMBER, p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+    BEGIN
+        -- Verifica si el producto está referenciado en detalleFactura o detallePedido
+        SELECT COUNT(*) INTO v_count FROM detalleFactura WHERE IdProducto = p_id;
+        IF v_count > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'No se puede eliminar el producto porque tiene facturas asociadas';
+            RETURN;
+        END IF;
+
+        SELECT COUNT(*) INTO v_count FROM detallePedido WHERE IdProducto = p_id;
+        IF v_count > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'No se puede eliminar el producto porque tiene pedidos asociados';
+            RETURN;
+        END IF;
+
+        -- Elimina primero el stock (si existe) y luego el producto
+        DELETE FROM Stock WHERE IdProducto = p_id;
+        DELETE FROM Productos WHERE IdProducto = p_id;
+
+        IF SQL%ROWCOUNT = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El producto no existe';
+        ELSE
+            COMMIT;
+            p_resultado.exito := TRUE;
+            p_resultado.mensaje := 'Producto eliminado correctamente';
+        END IF;
+
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al eliminar producto: ' || SQLERRM;
+    END sp_eliminar_producto;
+
+    -- FUNCIONES: Obtener/Listar productos
+    FUNCTION fn_obtener_producto(p_id NUMBER) RETURN SYS_REFCURSOR AS
+        cur_producto SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_producto FOR
+            SELECT p.IdProducto, p.nombreProducto, p.descripcion, p.codigo_producto,
+                   p.categoria, p.marca, p.precio, p.precio_compra, p.unidad_medida,
+                   p.stock_minimo, p.activo, p.IdProveedor,
+                   NVL(s.cantidad, 0) AS cantidadStock,
+                   p.fecha_creacion, p.fecha_modificacion,
+                   pr.nombreProveedor
+              FROM Productos p
+              LEFT JOIN Stock s ON s.IdProducto = p.IdProducto
+              LEFT JOIN Proveedores pr ON pr.IdProveedor = p.IdProveedor
+             WHERE p.IdProducto = p_id;
+        RETURN cur_producto;
+    END fn_obtener_producto;
+
+    FUNCTION fn_listar_productos RETURN SYS_REFCURSOR AS
+        cur_productos SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_productos FOR
+            SELECT p.IdProducto, p.nombreProducto, p.descripcion, p.codigo_producto,
+                   p.categoria, p.marca, p.precio, p.precio_compra, p.unidad_medida,
+                   p.stock_minimo, p.activo, p.IdProveedor,
+                   NVL(s.cantidad, 0) AS cantidadStock,
+                   p.fecha_creacion, p.fecha_modificacion,
+                   prov.nombreProveedor
+              FROM Productos p
+              LEFT JOIN Stock s ON s.IdProducto = p.IdProducto
+              LEFT JOIN Proveedores prov ON prov.IdProveedor = p.IdProveedor
+             ORDER BY p.nombreProducto;
+        RETURN cur_productos;
+    END fn_listar_productos;
+    
+    -- Wrappers JDBC para Productos
+    PROCEDURE sp_insertar_producto_jdbc(p_nombre VARCHAR2, p_descripcion VARCHAR2, p_codigo VARCHAR2,
+                                        p_categoria VARCHAR2, p_marca VARCHAR2, p_precio NUMBER,
+                                        p_precio_compra NUMBER, p_unidad_medida VARCHAR2,
+                                        p_stock_minimo NUMBER, p_id_proveedor NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_insertar_producto(p_nombre, p_descripcion, p_codigo, p_categoria, p_marca, p_precio,
+                              p_precio_compra, p_unidad_medida, p_stock_minimo, p_id_proveedor, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20020, v_res.mensaje);
+        END IF;
+    END sp_insertar_producto_jdbc;
+
+    PROCEDURE sp_actualizar_producto_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_descripcion VARCHAR2,
+                                          p_codigo VARCHAR2, p_categoria VARCHAR2, p_marca VARCHAR2,
+                                          p_precio NUMBER, p_precio_compra NUMBER, p_unidad_medida VARCHAR2,
+                                          p_stock_minimo NUMBER, p_id_proveedor NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_actualizar_producto(p_id, p_nombre, p_descripcion, p_codigo, p_categoria, p_marca,
+                                p_precio, p_precio_compra, p_unidad_medida, p_stock_minimo, p_id_proveedor, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20021, v_res.mensaje);
+        END IF;
+    END sp_actualizar_producto_jdbc;
+
+    PROCEDURE sp_eliminar_producto_jdbc(p_id NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_eliminar_producto(p_id, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20022, v_res.mensaje);
+        END IF;
+    END sp_eliminar_producto_jdbc;
+
+    -- Wrappers JDBC para Empleados
+    PROCEDURE sp_insertar_empleado_jdbc(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                        p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                        p_puesto VARCHAR2, p_salario NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_insertar_empleado(p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_puesto, p_salario, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20030, v_res.mensaje);
+        END IF;
+    END sp_insertar_empleado_jdbc;
+
+    PROCEDURE sp_actualizar_empleado_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                          p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                          p_cedula VARCHAR2, p_puesto VARCHAR2, p_salario NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_actualizar_empleado(p_id, p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_puesto, p_salario, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20031, v_res.mensaje);
+        END IF;
+    END sp_actualizar_empleado_jdbc;
+
+    PROCEDURE sp_eliminar_empleado_jdbc(p_id NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_eliminar_empleado(p_id, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20032, v_res.mensaje);
+        END IF;
+    END sp_eliminar_empleado_jdbc;
+
+    -- Wrappers JDBC para Proveedores
+    PROCEDURE sp_insertar_proveedor_jdbc(p_nombre VARCHAR2, p_direccion VARCHAR2, p_telefono VARCHAR2,
+                                         p_email VARCHAR2, p_contacto VARCHAR2, p_ruc VARCHAR2,
+                                         p_condiciones_pago VARCHAR2) AS
+        v_res t_resultado;
+    BEGIN
+        sp_insertar_proveedor(p_nombre, p_direccion, p_telefono, p_email, p_contacto, p_ruc, p_condiciones_pago, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20040, v_res.mensaje);
+        END IF;
+    END sp_insertar_proveedor_jdbc;
+
+    PROCEDURE sp_actualizar_proveedor_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_direccion VARCHAR2,
+                                           p_telefono VARCHAR2, p_email VARCHAR2, p_contacto VARCHAR2,
+                                           p_ruc VARCHAR2, p_condiciones_pago VARCHAR2) AS
+        v_res t_resultado;
+    BEGIN
+        sp_actualizar_proveedor(p_id, p_nombre, p_direccion, p_telefono, p_email, p_contacto, p_ruc, p_condiciones_pago, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20041, v_res.mensaje);
+        END IF;
+    END sp_actualizar_proveedor_jdbc;
+
+    PROCEDURE sp_eliminar_proveedor_jdbc(p_id NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_eliminar_proveedor(p_id, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20042, v_res.mensaje);
+        END IF;
+    END sp_eliminar_proveedor_jdbc;
     
     -- PROCEDIMIENTO CON CURSOR: Alertas de stock mÃ­nimo
     PROCEDURE sp_alertas_stock_minimo AS
@@ -1365,9 +1703,276 @@ CREATE OR REPLACE PACKAGE BODY PKG_FERRETERIA AS
         RETURN cur_clientes;
     END fn_clientes_mayor_compra;
     
-    -- AquÃ­ continÃºan el resto de procedimientos CRUD para Empleados, Proveedores, etc.
-    -- Por brevedad del ejemplo, he incluido los mÃ¡s representativos que muestran
-    -- el uso de cursores, expresiones regulares y la estructura completa
+    -- ==============================
+    -- CRUD Empleados (faltantes)
+    -- ==============================
+    PROCEDURE sp_insertar_empleado(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                   p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                   p_puesto VARCHAR2, p_salario NUMBER, p_resultado OUT t_resultado) AS
+        v_dup NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_dup FROM Empleados WHERE cedula = p_cedula OR (p_email IS NOT NULL AND email = p_email);
+        IF v_dup > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Ya existe un empleado con esa cÃ©dula o email';
+            RETURN;
+        END IF;
+
+        INSERT INTO Empleados (nombreEmpleado, apellidos, direccion, telefono, email, cedula, puesto, salario)
+        VALUES (p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_puesto, p_salario);
+
+        COMMIT;
+        p_resultado.exito := TRUE;
+        p_resultado.mensaje := 'Empleado insertado correctamente';
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Duplicado: cÃ©dula o email ya existe';
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al insertar empleado: ' || SQLERRM;
+    END sp_insertar_empleado;
+
+    PROCEDURE sp_actualizar_empleado(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                     p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                     p_cedula VARCHAR2, p_puesto VARCHAR2, p_salario NUMBER,
+                                     p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_count FROM Empleados WHERE IdEmpleado = p_id;
+        IF v_count = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El empleado no existe';
+            RETURN;
+        END IF;
+
+        UPDATE Empleados
+           SET nombreEmpleado = p_nombre,
+               apellidos = p_apellidos,
+               direccion = p_direccion,
+               telefono = p_telefono,
+               email = p_email,
+               cedula = p_cedula,
+               puesto = p_puesto,
+               salario = p_salario,
+               fecha_modificacion = SYSDATE
+         WHERE IdEmpleado = p_id;
+
+        COMMIT;
+        p_resultado.exito := TRUE;
+        p_resultado.mensaje := 'Empleado actualizado correctamente';
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Duplicado: cÃ©dula o email ya existe';
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al actualizar empleado: ' || SQLERRM;
+    END sp_actualizar_empleado;
+
+    PROCEDURE sp_eliminar_empleado(p_id NUMBER, p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+    BEGIN
+        -- Evitar eliminar si tiene horarios asociados
+        SELECT COUNT(*) INTO v_count FROM Horarios WHERE IdEmpleado = p_id;
+        IF v_count > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'No se puede eliminar el empleado porque tiene horarios asociados';
+            RETURN;
+        END IF;
+
+        DELETE FROM Empleados WHERE IdEmpleado = p_id;
+        IF SQL%ROWCOUNT = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El empleado no existe';
+        ELSE
+            COMMIT;
+            p_resultado.exito := TRUE;
+            p_resultado.mensaje := 'Empleado eliminado correctamente';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al eliminar empleado: ' || SQLERRM;
+    END sp_eliminar_empleado;
+
+    FUNCTION fn_obtener_empleado(p_id NUMBER) RETURN SYS_REFCURSOR AS
+        cur_emp SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_emp FOR
+            SELECT IdEmpleado, nombreEmpleado, apellidos, direccion, telefono, email, cedula, puesto, salario,
+                   activo, fecha_ingreso, fecha_modificacion
+              FROM Empleados
+             WHERE IdEmpleado = p_id;
+        RETURN cur_emp;
+    END fn_obtener_empleado;
+
+    FUNCTION fn_listar_empleados RETURN SYS_REFCURSOR AS
+        cur_emp SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_emp FOR
+            SELECT IdEmpleado, nombreEmpleado, apellidos, direccion, telefono, email, cedula, puesto, salario,
+                   activo, fecha_ingreso, fecha_modificacion
+              FROM Empleados
+             ORDER BY nombreEmpleado, apellidos;
+        RETURN cur_emp;
+    END fn_listar_empleados;
+
+    -- ==============================
+    -- JDBC Wrappers para Empleados
+    -- ==============================
+    PROCEDURE sp_insertar_empleado_jdbc(p_nombre VARCHAR2, p_apellidos VARCHAR2, p_direccion VARCHAR2,
+                                        p_telefono VARCHAR2, p_email VARCHAR2, p_cedula VARCHAR2,
+                                        p_puesto VARCHAR2, p_salario NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_insertar_empleado(p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_puesto, p_salario, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20013, v_res.mensaje);
+        END IF;
+    END sp_insertar_empleado_jdbc;
+
+    PROCEDURE sp_actualizar_empleado_jdbc(p_id NUMBER, p_nombre VARCHAR2, p_apellidos VARCHAR2,
+                                         p_direccion VARCHAR2, p_telefono VARCHAR2, p_email VARCHAR2,
+                                         p_cedula VARCHAR2, p_puesto VARCHAR2, p_salario NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_actualizar_empleado(p_id, p_nombre, p_apellidos, p_direccion, p_telefono, p_email, p_cedula, p_puesto, p_salario, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20014, v_res.mensaje);
+        END IF;
+    END sp_actualizar_empleado_jdbc;
+
+    PROCEDURE sp_eliminar_empleado_jdbc(p_id NUMBER) AS
+        v_res t_resultado;
+    BEGIN
+        sp_eliminar_empleado(p_id, v_res);
+        IF NOT v_res.exito THEN
+            RAISE_APPLICATION_ERROR(-20015, v_res.mensaje);
+        END IF;
+    END sp_eliminar_empleado_jdbc;
+
+    -- ==============================
+    -- CRUD Proveedores (faltantes)
+    -- ==============================
+    PROCEDURE sp_insertar_proveedor(p_nombre VARCHAR2, p_direccion VARCHAR2, p_telefono VARCHAR2,
+                                    p_email VARCHAR2, p_contacto VARCHAR2, p_ruc VARCHAR2,
+                                    p_condiciones_pago VARCHAR2, p_resultado OUT t_resultado) AS
+    BEGIN
+        INSERT INTO Proveedores (nombreProveedor, direccion, telefono, email, contacto_principal, ruc, condiciones_pago)
+        VALUES (p_nombre, p_direccion, p_telefono, p_email, p_contacto, p_ruc, p_condiciones_pago);
+
+        COMMIT;
+        p_resultado.exito := TRUE;
+        p_resultado.mensaje := 'Proveedor insertado correctamente';
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Duplicado: RUC o email ya existe';
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al insertar proveedor: ' || SQLERRM;
+    END sp_insertar_proveedor;
+
+    PROCEDURE sp_actualizar_proveedor(p_id NUMBER, p_nombre VARCHAR2, p_direccion VARCHAR2,
+                                      p_telefono VARCHAR2, p_email VARCHAR2, p_contacto VARCHAR2,
+                                      p_ruc VARCHAR2, p_condiciones_pago VARCHAR2, p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_count FROM Proveedores WHERE IdProveedor = p_id;
+        IF v_count = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El proveedor no existe';
+            RETURN;
+        END IF;
+
+        UPDATE Proveedores
+           SET nombreProveedor = p_nombre,
+               direccion = p_direccion,
+               telefono = p_telefono,
+               email = p_email,
+               contacto_principal = p_contacto,
+               ruc = p_ruc,
+               condiciones_pago = p_condiciones_pago,
+               fecha_modificacion = SYSDATE
+         WHERE IdProveedor = p_id;
+
+        COMMIT;
+        p_resultado.exito := TRUE;
+        p_resultado.mensaje := 'Proveedor actualizado correctamente';
+    EXCEPTION
+        WHEN DUP_VAL_ON_INDEX THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Duplicado: RUC o email ya existe';
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al actualizar proveedor: ' || SQLERRM;
+    END sp_actualizar_proveedor;
+
+    PROCEDURE sp_eliminar_proveedor(p_id NUMBER, p_resultado OUT t_resultado) AS
+        v_count NUMBER;
+    BEGIN
+        -- No eliminar si tiene productos asociados
+        SELECT COUNT(*) INTO v_count FROM Productos WHERE IdProveedor = p_id;
+        IF v_count > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'No se puede eliminar: hay productos asociados';
+            RETURN;
+        END IF;
+        -- No eliminar si tiene pedidos asociados
+        SELECT COUNT(*) INTO v_count FROM Pedidos WHERE IdProveedor = p_id;
+        IF v_count > 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'No se puede eliminar: hay pedidos asociados';
+            RETURN;
+        END IF;
+
+        DELETE FROM Proveedores WHERE IdProveedor = p_id;
+        IF SQL%ROWCOUNT = 0 THEN
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'El proveedor no existe';
+        ELSE
+            COMMIT;
+            p_resultado.exito := TRUE;
+            p_resultado.mensaje := 'Proveedor eliminado correctamente';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            p_resultado.exito := FALSE;
+            p_resultado.mensaje := 'Error al eliminar proveedor: ' || SQLERRM;
+    END sp_eliminar_proveedor;
+
+    FUNCTION fn_obtener_proveedor(p_id NUMBER) RETURN SYS_REFCURSOR AS
+        cur_prv SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_prv FOR
+            SELECT IdProveedor, nombreProveedor, direccion, telefono, email, contacto_principal, ruc,
+                   condiciones_pago, calificacion, activo, fecha_registro, fecha_modificacion
+              FROM Proveedores
+             WHERE IdProveedor = p_id;
+        RETURN cur_prv;
+    END fn_obtener_proveedor;
+
+    FUNCTION fn_listar_proveedores RETURN SYS_REFCURSOR AS
+        cur_prv SYS_REFCURSOR;
+    BEGIN
+        OPEN cur_prv FOR
+            SELECT IdProveedor, nombreProveedor, direccion, telefono, email, contacto_principal, ruc,
+                   condiciones_pago, calificacion, activo, fecha_registro, fecha_modificacion
+              FROM Proveedores
+             ORDER BY nombreProveedor;
+        RETURN cur_prv;
+    END fn_listar_proveedores;
     
 END PKG_FERRETERIA;
 /

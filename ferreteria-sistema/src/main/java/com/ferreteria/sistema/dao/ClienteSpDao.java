@@ -4,6 +4,7 @@ import com.ferreteria.sistema.entity.Cliente;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
@@ -57,7 +58,7 @@ public class ClienteSpDao {
     public List<Cliente> listar() {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
                 .withCatalogName("PKG_FERRETERIA")
-                .withFunctionName("FN_LISTAR_CLIENTES")
+                .withFunctionName("fn_listar_clientes")
                 .returningResultSet("RETURN_VALUE", clienteRowMapper());
 
         Map<String, Object> out = call.execute(new HashMap<>());
@@ -67,23 +68,45 @@ public class ClienteSpDao {
     }
 
     public Optional<Cliente> obtenerPorId(Long id) {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA")
-                .withFunctionName("FN_OBTENER_CLIENTE")
-                .returningResultSet("RETURN_VALUE", clienteRowMapper());
+        try {
+            SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
+                    .withCatalogName("PKG_FERRETERIA")
+                    .withFunctionName("fn_obtener_cliente")
+                    .withoutProcedureColumnMetaDataAccess()
+                    .declareParameters(
+                            new SqlParameter("P_ID", Types.NUMERIC)
+                    )
+                    .returningResultSet("RETURN_VALUE", clienteRowMapper());
 
-        MapSqlParameterSource in = new MapSqlParameterSource().addValue("P_ID", id, Types.NUMERIC);
-        Map<String, Object> out = call.execute(in);
-        @SuppressWarnings("unchecked")
-        List<Cliente> lista = (List<Cliente>) out.get("RETURN_VALUE");
-        if (lista == null || lista.isEmpty()) return Optional.empty();
-        return Optional.of(lista.get(0));
+            MapSqlParameterSource in = new MapSqlParameterSource().addValue("P_ID", id, Types.NUMERIC);
+            Map<String, Object> out = call.execute(in);
+            @SuppressWarnings("unchecked")
+            List<Cliente> lista = (List<Cliente>) out.get("RETURN_VALUE");
+            if (lista == null || lista.isEmpty()) return Optional.empty();
+            return Optional.of(lista.get(0));
+        } catch (Exception e) {
+            // Fallback: buscar en la lista completa
+            List<Cliente> todos = listar();
+            return todos.stream()
+                    .filter(c -> c.getIdCliente().equals(id))
+                    .findFirst();
+        }
     }
 
     public void insertar(Cliente c) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
                 .withCatalogName("PKG_FERRETERIA")
-                .withProcedureName("SP_INSERTAR_CLIENTE");
+                .withProcedureName("SP_INSERTAR_CLIENTE_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("P_NOMBRE", Types.VARCHAR),
+                        new SqlParameter("P_APELLIDOS", Types.VARCHAR),
+                        new SqlParameter("P_DIRECCION", Types.VARCHAR),
+                        new SqlParameter("P_TELEFONO", Types.VARCHAR),
+                        new SqlParameter("P_EMAIL", Types.VARCHAR),
+                        new SqlParameter("P_CEDULA", Types.VARCHAR),
+                        new SqlParameter("P_TIPO_CLIENTE", Types.VARCHAR)
+                );
 
         MapSqlParameterSource in = new MapSqlParameterSource()
                 .addValue("P_NOMBRE", c.getNombreCliente())
@@ -100,7 +123,18 @@ public class ClienteSpDao {
     public void actualizar(Long id, Cliente c) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
                 .withCatalogName("PKG_FERRETERIA")
-                .withProcedureName("SP_ACTUALIZAR_CLIENTE");
+                .withProcedureName("SP_ACTUALIZAR_CLIENTE_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("P_ID", Types.NUMERIC),
+                        new SqlParameter("P_NOMBRE", Types.VARCHAR),
+                        new SqlParameter("P_APELLIDOS", Types.VARCHAR),
+                        new SqlParameter("P_DIRECCION", Types.VARCHAR),
+                        new SqlParameter("P_TELEFONO", Types.VARCHAR),
+                        new SqlParameter("P_EMAIL", Types.VARCHAR),
+                        new SqlParameter("P_CEDULA", Types.VARCHAR),
+                        new SqlParameter("P_TIPO_CLIENTE", Types.VARCHAR)
+                );
 
         MapSqlParameterSource in = new MapSqlParameterSource()
                 .addValue("P_ID", id)
@@ -118,7 +152,11 @@ public class ClienteSpDao {
     public void eliminar(Long id) throws DataAccessException {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
                 .withCatalogName("PKG_FERRETERIA")
-                .withProcedureName("SP_ELIMINAR_CLIENTE");
+                .withProcedureName("SP_ELIMINAR_CLIENTE_JDBC")
+                .withoutProcedureColumnMetaDataAccess()
+                .declareParameters(
+                        new SqlParameter("P_ID", Types.NUMERIC)
+                );
 
         MapSqlParameterSource in = new MapSqlParameterSource().addValue("P_ID", id);
         call.execute(in);

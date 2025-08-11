@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -73,6 +74,7 @@ public class Cliente {
 
     // Relación uno a muchos con facturas
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Factura> facturas = new HashSet<>();
 
     // Enumeración para tipos de cliente
@@ -199,6 +201,7 @@ public class Cliente {
         this.fechaModificacion = fechaModificacion;
     }
 
+    @JsonIgnore
     public Set<Factura> getFacturas() {
         return facturas;
     }

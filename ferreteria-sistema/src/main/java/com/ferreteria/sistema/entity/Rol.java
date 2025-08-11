@@ -3,6 +3,7 @@ package com.ferreteria.sistema.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -42,6 +43,7 @@ public class Rol {
 
     // Relación uno a muchos con usuarios
     @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Usuario> usuarios = new HashSet<>();
 
     // Constructor por defecto
@@ -112,6 +114,7 @@ public class Rol {
         this.fechaModificacion = fechaModificacion;
     }
 
+    @JsonIgnore
     public Set<Usuario> getUsuarios() {
         return usuarios;
     }

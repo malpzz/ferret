@@ -12,6 +12,83 @@ function validatePhone(phone) {
   return re.test(phone) && phone.length >= 8;
 }
 
+// --- API helpers (fetch to Spring controllers) ---
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+function getCsrfHeader() {
+  const token = getCookie('XSRF-TOKEN');
+  return token ? { 'X-XSRF-TOKEN': token } : {};
+}
+
+function buildApiUrl(url) {
+  if (/^https?:\/\//i.test(url)) return url;
+  // Prepend context path if app is deployed under one (e.g., /ferreteria)
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  const context = segments.length > 0 ? `/${segments[0]}` : '';
+  return `${context}${url}`;
+}
+
+const DEBUG_API = true;
+
+async function apiFetch(url, options = {}) {
+  const defaultHeaders = { 
+    'Accept': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  };
+  const method = (options.method || 'GET').toUpperCase();
+  const csrfHeaders = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) ? getCsrfHeader() : {};
+  const headers = { ...defaultHeaders, ...(options.headers || {}), ...csrfHeaders };
+
+  const finalOptions = {
+    credentials: 'same-origin',
+    ...options,
+    headers,
+  };
+
+  const builtUrl = buildApiUrl(url);
+  if (DEBUG_API) console.log('[API] request', { method, url: builtUrl, options: finalOptions });
+  const response = await fetch(builtUrl, finalOptions);
+  let data;
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    data = await response.json().catch(() => null);
+  } else {
+    data = await response.text().catch(() => null);
+  }
+
+  if (!response.ok) {
+    const err = new Error((data && data.mensaje) || response.statusText || 'Request error');
+    err.status = response.status;
+    err.data = data;
+    if (DEBUG_API) console.error('[API] error', { method, url: builtUrl, status: response.status, data });
+    throw err;
+  }
+  // Normalizar respuestas sin cuerpo como éxito
+  if (data === null || data === '') {
+    const normalized = { ok: true, status: response.status };
+    if (DEBUG_API) console.log('[API] response (empty body normalized)', normalized);
+    return normalized;
+  }
+  if (DEBUG_API) console.log('[API] response', { status: response.status, data });
+  return data;
+}
+
+function apiGet(url) { return apiFetch(url, { method: 'GET' }); }
+function apiPost(url, body) {
+  return apiFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+function apiPut(url, body) {
+  return apiFetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+function apiDelete(url) { return apiFetch(url, { method: 'DELETE' }); }
+
 function showAlert(message, type = "info") {
   const alertDiv = document.createElement("div");
   alertDiv.className = `alert alert-${type}`;
@@ -244,8 +321,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   sidebarLinks.forEach((link) => {
     link.classList.remove("active");
-    if (link.getAttribute("href") === currentPath.split("/").pop()) {
-      link.classList.add("active");
+    const href = link.getAttribute("href");
+    if (!href) return;
+    try {
+      const url = new URL(href, window.location.origin);
+      if (url.pathname === currentPath) {
+        link.classList.add("active");
+      }
+    } catch (e) {
+      // ignore invalid URLs
     }
   });
 });

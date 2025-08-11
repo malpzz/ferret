@@ -17,7 +17,23 @@ function initializeDashboard() {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
+        // Crear formulario de logout para Spring Security
+        const logoutForm = document.createElement('form');
+        logoutForm.method = 'POST';
+        logoutForm.action = buildApiUrl('/logout');
+        
+        // Añadir token CSRF
+        const csrfHeaders = getCsrfHeader();
+        if (csrfHeaders._csrf) {
+          const csrfInput = document.createElement('input');
+          csrfInput.type = 'hidden';
+          csrfInput.name = csrfHeaders._csrf_parameterName || '_csrf';
+          csrfInput.value = csrfHeaders._csrf;
+          logoutForm.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(logoutForm);
+        logoutForm.submit();
       }
     });
   }
@@ -301,7 +317,18 @@ function initializeSampleData() {
   }
 }
 
-initializeSampleData();
+// Comentado para usar solo datos de API - limpiar localStorage existente
+// initializeSampleData();
+
+// Limpiar datos de ejemplo si existen para usar solo API
+if (localStorage.getItem("dataInitialized")) {
+  console.log('[Dashboard] Limpiando datos de ejemplo para usar API');
+  localStorage.removeItem("productos");
+  localStorage.removeItem("clientes");
+  localStorage.removeItem("proveedores");
+  localStorage.removeItem("empleados");
+  localStorage.removeItem("dataInitialized");
+}
 
 window.addActivity = addActivity;
 window.formatCurrency = formatCurrency;
