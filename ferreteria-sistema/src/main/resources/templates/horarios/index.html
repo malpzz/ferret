@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Horarios - Sistema FerreterÃ­a</title>
+    <title>Gestión de Horarios - Sistema Ferretería</title>
     <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,9 +32,9 @@
 
         <main class="main-content">
             <header class="header">
-                <h1>GestiÃ³n de Horarios</h1>
+                <h1>Gestión de Horarios</h1>
                 <div class="user-menu">
-                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
@@ -95,157 +95,32 @@
                 <input type="hidden" name="id">
 
                 <div class="form-row">
-                    <div class="form-group col-md-6">
+                    <div class="form-group col-md-8">
                         <label for="idEmpleado">Empleado *</label>
                         <select id="idEmpleado" name="idEmpleado" class="form-control" required>
                             <option value="">Seleccione un empleado</option>
                         </select>
                     </div>
-                    <div class="form-group col-md-3">
-                        <label for="fechaInicio">Fecha de Inicio *</label>
+                    <div class="form-group col-md-4">
+                        <label for="fechaInicio">Fecha *</label>
                         <input type="date" id="fechaInicio" name="fechaInicio" class="form-control" required>
-                    </div>
-                    <div class="form-group col-md-3">
-                        <label for="fechaFin">Fecha de Fin</label>
-                        <input type="date" id="fechaFin" name="fechaFin" class="form-control">
                     </div>
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group col-md-4">
-                        <label for="tipoTurno">Tipo de Turno *</label>
-                        <select id="tipoTurno" name="tipoTurno" class="form-control" required>
-                            <option value="completo">Tiempo Completo</option>
-                            <option value="parcial">Tiempo Parcial</option>
-                            <option value="rotativo">Rotativo</option>
-                        </select>
+                    <div class="form-group col-md-6">
+                        <label for="horaEntrada">Hora de Entrada *</label>
+                        <input type="time" id="horaEntrada" name="horaEntrada" class="form-control" required>
                     </div>
-                    <div class="form-group col-md-4">
-                        <label for="horasSemanales">Horas Semanales</label>
-                        <input type="number" id="horasSemanales" name="horasSemanales" class="form-control" min="1" max="60" step="0.5">
-                    </div>
-                    <div class="form-group col-md-4">
-                        <label for="estado">Estado *</label>
-                        <select id="estado" name="estado" class="form-control" required>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Horarios por DÃ­a de la Semana</label>
-                    <div class="schedule-days">
-                        <div class="day-schedule" data-day="lunes">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="lunes">
-                                    <strong>Lunes</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="lunes_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="lunes_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="lunes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="lunes_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="martes">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="martes">
-                                    <strong>Martes</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="martes_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="martes_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="martes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="martes_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="miercoles">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="miercoles">
-                                    <strong>MiÃ©rcoles</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="miercoles_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="miercoles_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="miercoles_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="miercoles_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="jueves">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="jueves">
-                                    <strong>Jueves</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="jueves_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="jueves_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="jueves_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="jueves_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="viernes">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="viernes">
-                                    <strong>Viernes</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="viernes_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="viernes_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="viernes_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="viernes_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="sabado">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="sabado">
-                                    <strong>SÃ¡bado</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="sabado_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="sabado_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="sabado_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="sabado_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
-
-                        <div class="day-schedule" data-day="domingo">
-                            <div class="day-header">
-                                <label>
-                                    <input type="checkbox" class="day-checkbox" data-day="domingo">
-                                    <strong>Domingo</strong>
-                                </label>
-                            </div>
-                            <div class="time-inputs">
-                                <input type="time" name="domingo_entrada" placeholder="Entrada" class="form-control">
-                                <input type="time" name="domingo_salida" placeholder="Salida" class="form-control">
-                                <input type="time" name="domingo_entrada_tarde" placeholder="Entrada Tarde" class="form-control">
-                                <input type="time" name="domingo_salida_tarde" placeholder="Salida Tarde" class="form-control">
-                            </div>
-                        </div>
+                    <div class="form-group col-md-6">
+                        <label for="horaSalida">Hora de Salida *</label>
+                        <input type="time" id="horaSalida" name="horaSalida" class="form-control" required>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="observaciones">Observaciones</label>
-                    <textarea id="observaciones" name="observaciones" class="form-control" rows="3" placeholder="Observaciones adicionales sobre el horario"></textarea>
+                    <textarea id="observaciones" name="observaciones" class="form-control" rows="3" placeholder="Observaciones sobre el horario"></textarea>
                 </div>
 
                 <div class="d-flex justify-between gap-2 mt-3">

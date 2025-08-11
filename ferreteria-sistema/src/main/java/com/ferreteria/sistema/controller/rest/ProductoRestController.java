@@ -19,8 +19,18 @@ public class ProductoRestController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR','GERENTE','BODEGUERO','VENDEDOR')")
-    public ResponseEntity<List<Producto>> listar() {
-        return ResponseEntity.ok(productoService.obtenerTodos());
+    public ResponseEntity<List<Producto>> listar(@RequestParam(required = false) Boolean soloConStock) {
+        List<Producto> productos = productoService.obtenerTodos();
+        if (Boolean.TRUE.equals(soloConStock)) {
+            productos = productos.stream()
+                    .filter(p -> {
+                        Integer c = null;
+                        try { c = p.getCantidadStock(); } catch (Exception ignored) {}
+                        return c != null && c > 0;
+                    })
+                    .toList();
+        }
+        return ResponseEntity.ok(productos);
     }
 
     @GetMapping("/{id}")

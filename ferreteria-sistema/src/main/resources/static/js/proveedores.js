@@ -11,14 +11,8 @@ function initializeProveedoresPage() {
   const form = document.getElementById("proveedorForm");
   form.addEventListener("submit", handleFormSubmit);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 }
 
 async function loadProveedores() {

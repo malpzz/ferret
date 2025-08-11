@@ -69,6 +69,7 @@ public class Usuario {
     // Relación muchos a uno con rol
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "IDROL", nullable = false)
+    @JsonIgnore
     private Rol rol;
 
     // Relación uno a muchos con facturas
@@ -229,6 +230,51 @@ public class Usuario {
     // Métodos de utilidad
     public String getNombreCompleto() {
         return (nombre != null ? nombre : "") + " " + (apellidos != null ? apellidos : "");
+    }
+    
+    // Métodos seguros para obtener información del rol sin lazy loading
+    public Long getIdRol() {
+        try {
+            return rol != null ? rol.getIdRol() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public String getNombreRol() {
+        try {
+            return rol != null ? rol.getNombre() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    // Método para serializar información básica del rol en JSON
+    public RolInfo getRolInfo() {
+        try {
+            if (rol != null) {
+                return new RolInfo(rol.getIdRol(), rol.getNombre());
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    // Clase interna para información básica del rol
+    public static class RolInfo {
+        private Long idRol;
+        private String nombre;
+        
+        public RolInfo(Long idRol, String nombre) {
+            this.idRol = idRol;
+            this.nombre = nombre;
+        }
+        
+        public Long getIdRol() { return idRol; }
+        public void setIdRol(Long idRol) { this.idRol = idRol; }
+        public String getNombre() { return nombre; }
+        public void setNombre(String nombre) { this.nombre = nombre; }
     }
 
     public void incrementarIntentosFallidos() {

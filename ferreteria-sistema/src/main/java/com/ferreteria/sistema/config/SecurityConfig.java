@@ -17,6 +17,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * Configuración de seguridad para el sistema de ferretería
@@ -129,15 +131,20 @@ public class SecurityConfig {
                 .permitAll()
             )
             
-            // Configuración del logout
-            .logout(logout -> logout
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                .logoutSuccessUrl("/login?logout")
-                .deleteCookies("JSESSIONID", "FERRETERIA_SESSION")
-                .invalidateHttpSession(true)
-                .clearAuthentication(true)
-                .permitAll()
-            )
+            // Configuración del logout (permitir GET y POST)
+            .logout(logout -> {
+                RequestMatcher logoutMatcher = new OrRequestMatcher(
+                    new AntPathRequestMatcher("/logout", "GET"),
+                    new AntPathRequestMatcher("/logout", "POST")
+                );
+                logout
+                    .logoutRequestMatcher(logoutMatcher)
+                    .logoutSuccessUrl("/login?logout")
+                    .deleteCookies("JSESSIONID", "FERRETERIA_SESSION")
+                    .invalidateHttpSession(true)
+                    .clearAuthentication(true)
+                    .permitAll();
+            })
             
             // Configuración de sesiones
             .sessionManagement(session -> session
@@ -165,7 +172,7 @@ public class SecurityConfig {
             
             // Configuración CSRF (para formularios web)
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/api/**") // Deshabilitar CSRF para APIs REST
+                .ignoringRequestMatchers("/api/**", "/logout") // Deshabilitar CSRF para APIs REST y logout
                 .csrfTokenRepository(org.springframework.security.web.csrf.CookieCsrfTokenRepository.withHttpOnlyFalse())
             )
             

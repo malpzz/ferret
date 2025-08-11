@@ -21,31 +21,8 @@ function initializeFacturasPage() {
   const selectProducto = document.getElementById("selectProducto");
   selectProducto.addEventListener("change", onProductSelect);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        // Crear un formulario para logout POST a Spring Security
-        const logoutForm = document.createElement('form');
-        logoutForm.method = 'POST';
-        logoutForm.action = '/logout';
-        
-        // Agregar token CSRF si existe
-        const csrfHeader = getCsrfHeader();
-        if (csrfHeader['X-CSRF-TOKEN']) {
-          const csrfInput = document.createElement('input');
-          csrfInput.type = 'hidden';
-          csrfInput.name = '_csrf';
-          csrfInput.value = csrfHeader['X-CSRF-TOKEN'];
-          logoutForm.appendChild(csrfInput);
-        }
-        
-        document.body.appendChild(logoutForm);
-        logoutForm.submit();
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 
   document.getElementById("fechaFactura").value = new Date()
     .toISOString()
@@ -74,16 +51,32 @@ function generateInvoiceNumber() {
 async function loadFacturas() {
   try {
     const facturas = await apiGet('/api/facturas');
-    const facturasMapped = facturas.map(f => ({
-      id: f.idFactura || f.id,
-      numeroFactura: f.numero || f.numeroFactura || '-',
-      fechaFactura: f.fecha,
-      idCliente: (f.cliente && (f.cliente.idCliente || f.cliente.id)) || f.idCliente,
-      nombreCliente: (f.cliente && f.cliente.nombreCliente) || '-',
-      total: f.total || 0,
-      estado: f.estado || 'pendiente',
-      observaciones: f.observaciones || ''
-    }));
+    const facturasMapped = facturas.map(f => {
+      console.log('Factura cruda:', f); // Debug
+      
+      // Debug específico para usuarios
+      if (f.usuario) {
+        console.log('Usuario en factura:', f.usuario);
+      } else {
+        console.log('Sin usuario en factura ID:', f.idFactura);
+      }
+      
+      return {
+        id: f.idFactura || f.id,
+        numeroFactura: f.numeroFactura || f.numero || '-',
+        fechaFactura: f.fecha,
+        idCliente: (f.cliente && (f.cliente.idCliente || f.cliente.id)) || f.idCliente,
+        nombreCliente: (f.cliente && f.cliente.nombreCliente) || 'Cliente no encontrado',
+        idUsuario: (f.usuario && f.usuario.idUsuario) || null,
+        nombreUsuario: f.usuario ? 
+          (f.usuario.nombre && f.usuario.apellidos ? 
+           `${f.usuario.nombre} ${f.usuario.apellidos}` : 
+           f.usuario.nombreUsuario) : 'Sin usuario',
+        total: f.total || 0,
+        estado: (f.estado || 'pendiente').toLowerCase(),
+        observaciones: f.observaciones || ''
+      };
+    });
     renderFacturasTable(facturasMapped);
   } catch (e) {
     showAlert(`Error cargando facturas: ${e.message}`, 'danger');
@@ -106,7 +99,8 @@ async function loadClientes() {
 
 async function loadProductos() {
   try {
-    const productos = await apiGet('/api/productos');
+    // Solo productos con stock > 0
+    const productos = await apiGet('/api/productos?soloConStock=true');
     const select = document.getElementById("selectProducto");
     select.innerHTML = '<option value="">Seleccione un producto</option>';
     productos.forEach((producto) => {
@@ -130,6 +124,7 @@ function renderFacturasTable(facturas) {
       format: (value) => new Date(value).toLocaleDateString(),
     },
     { key: "nombreCliente", label: "Cliente" },
+    { key: "nombreUsuario", label: "Usuario" },
     {
       key: "total",
       label: "Total",
@@ -185,12 +180,12 @@ async function filterByStatus() {
 
     const facturasMapped = filteredFacturas.map(f => ({
       id: f.idFactura || f.id,
-      numeroFactura: f.numero || f.numeroFactura || '-',
+      numeroFactura: f.numeroFactura || f.numero || '-',
       fechaFactura: f.fecha,
       idCliente: (f.cliente && (f.cliente.idCliente || f.cliente.id)) || f.idCliente,
       nombreCliente: (f.cliente && f.cliente.nombreCliente) || 'Cliente no encontrado',
       total: f.total || 0,
-      estado: f.estado || 'pendiente',
+      estado: (f.estado || 'pendiente').toLowerCase(),
       observaciones: f.observaciones || ''
     }));
 
@@ -221,7 +216,7 @@ async function editFactura(id) {
   try {
     const factura = await apiGet(`/api/facturas/${id}`);
     
-    if (factura.estado === "ANULADA" || factura.estado === "anulada") {
+    if ((factura.estado || '').toLowerCase() === "anulada") {
       showAlert("No se puede editar una factura anulada", "danger");
       return;
     }
@@ -229,15 +224,88 @@ async function editFactura(id) {
     document.getElementById("modalTitle").textContent = "Editar Factura";
     currentFacturaId = id;
 
+    console.log('Factura para editar:', factura); // Debug
+    
+    // Debug específico para usuario en edición
+    if (factura.usuario) {
+      console.log('Usuario en factura para editar:', factura.usuario);
+    } else {
+      console.log('Sin usuario en factura para editar ID:', id);
+    }
+    
     const form = document.getElementById("facturaForm");
-    form.querySelector('[name="numeroFactura"]').value = factura.numero || factura.numeroFactura || '';
+    form.querySelector('[name="numeroFactura"]').value = factura.numeroFactura || factura.numero || '';
     form.querySelector('[name="fechaFactura"]').value = factura.fecha || factura.fechaFactura || '';
-    form.querySelector('[name="idCliente"]').value = (factura.cliente && (factura.cliente.idCliente || factura.cliente.id)) || factura.idCliente || '';
-    form.querySelector('[name="estado"]').value = factura.estado || '';
+    form.querySelector('[name="idCliente"]').value = (factura.cliente && factura.cliente.idCliente) || factura.idCliente || '';
+    form.querySelector('[name="estado"]').value = (factura.estado || '').toLowerCase();
     form.querySelector('[name="observaciones"]').value = factura.observaciones || "";
+    
+    console.log('Cliente ID seleccionado:', (factura.cliente && factura.cliente.idCliente) || factura.idCliente); // Debug
 
-    // Para facturas existentes, los productos podrían venir del endpoint de detalles
-    invoiceProducts = factura.detalles || factura.productos || [];
+    // Cargar productos existentes desde el endpoint de detalles
+    try {
+      console.log(`DEBUG - Cargando detalles para factura ID: ${id}`);
+      const detalles = await apiGet(`/api/facturas/${id}/detalles`);
+      console.log("DEBUG - Detalles recibidos del servidor:", detalles);
+      
+      if (!detalles || !Array.isArray(detalles)) {
+        console.warn("DEBUG - Detalles no es un array válido:", detalles);
+        invoiceProducts = [];
+      } else {
+        // Cargar lista de productos para mapear nombres si es necesario
+        let productosDisponibles = [];
+        try {
+          productosDisponibles = await apiGet('/api/productos');
+          console.log("DEBUG - Productos disponibles cargados:", productosDisponibles.length);
+        } catch (e) {
+          console.warn("No se pudieron cargar productos disponibles:", e.message);
+        }
+        
+        invoiceProducts = detalles.map((detalle, index) => {
+          console.log(`DEBUG - Detalle ${index} crudo:`, detalle);
+          console.log(`DEBUG - Propiedades del detalle:`, Object.keys(detalle));
+          console.log(`DEBUG - nombreProducto:`, detalle.nombreProducto);
+          console.log(`DEBUG - NOMBREPRODUCTO:`, detalle.NOMBREPRODUCTO);
+          console.log(`DEBUG - nombre_producto:`, detalle.nombre_producto);
+          
+          const idProducto = detalle.IdProducto || detalle.IDPRODUCTO || detalle.idProducto;
+          let nombreProducto = detalle.nombreProducto || detalle.NOMBREPRODUCTO || detalle.nombre_producto;
+          
+          // Si no tenemos el nombre, buscarlo en la lista de productos disponibles
+          if (!nombreProducto && idProducto && productosDisponibles.length > 0) {
+            const productoEncontrado = productosDisponibles.find(p => 
+              (p.idProducto || p.IdProducto) == idProducto);
+            if (productoEncontrado) {
+              nombreProducto = productoEncontrado.nombreProducto || productoEncontrado.nombre || 
+                              `Producto ${idProducto}`;
+              console.log(`DEBUG - Nombre encontrado en lista de productos: ${nombreProducto}`);
+            }
+          }
+          
+          if (!nombreProducto) {
+            nombreProducto = `Producto ${idProducto}`;
+          }
+          
+          const producto = {
+            idProducto: idProducto ? idProducto.toString() : '',
+            nombreProducto: nombreProducto,
+            precio: parseFloat(detalle.precioUni || detalle.PRECIOUNI || 0),
+            cantidad: parseInt(detalle.cantidad || detalle.CANTIDAD || 0),
+            descuento: parseFloat(detalle.descuento_item || detalle.DESCUENTO_ITEM || 0)
+          };
+          
+          console.log(`DEBUG - Producto ${index} mapeado:`, producto);
+          return producto;
+        });
+        console.log("DEBUG - Productos mapeados para edición:", invoiceProducts);
+      }
+    } catch (e) {
+      console.error("ERROR - No se pudieron cargar los detalles de la factura:", e);
+      console.error("ERROR - Status:", e.status);
+      console.error("ERROR - Data:", e.data);
+      invoiceProducts = [];
+    }
+    
     updateInvoiceProductsTable();
     calculateInvoiceTotals();
 
@@ -266,6 +334,48 @@ async function viewFactura(id) {
       } catch (e) {
         cliente = { nombreCliente: "Cliente no encontrado", email: "", telefono: "" };
       }
+    }
+
+    // Cargar productos desde el endpoint de detalles
+    try {
+      const detalles = await apiGet(`/api/facturas/${id}/detalles`);
+      
+      // Cargar lista de productos para mapear nombres si es necesario
+      let productosDisponibles = [];
+      try {
+        productosDisponibles = await apiGet('/api/productos');
+      } catch (e) {
+        console.warn("No se pudieron cargar productos disponibles:", e.message);
+      }
+      
+      factura.detalles = detalles.map(detalle => {
+        const idProducto = detalle.IdProducto || detalle.IDPRODUCTO || detalle.idProducto;
+        let nombreProducto = detalle.nombreProducto || detalle.NOMBREPRODUCTO || detalle.nombre_producto;
+        
+        // Si no tenemos el nombre, buscarlo en la lista de productos disponibles
+        if (!nombreProducto && idProducto && productosDisponibles.length > 0) {
+          const productoEncontrado = productosDisponibles.find(p => 
+            (p.idProducto || p.IdProducto) == idProducto);
+          if (productoEncontrado) {
+            nombreProducto = productoEncontrado.nombreProducto || productoEncontrado.nombre || 
+                            `Producto ${idProducto}`;
+          }
+        }
+        
+        if (!nombreProducto) {
+          nombreProducto = `Producto ${idProducto}`;
+        }
+        
+        return {
+          nombreProducto: nombreProducto,
+          precio: parseFloat(detalle.precioUni || detalle.PRECIOUNI || 0),
+          cantidad: parseInt(detalle.cantidad || detalle.CANTIDAD || 0),
+          descuento: parseFloat(detalle.descuento_item || detalle.DESCUENTO_ITEM || 0)
+        };
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar los detalles de la factura:", e.message);
+      factura.detalles = [];
     }
 
     const detailsHtml = generateInvoicePreview(factura, cliente);
@@ -321,7 +431,7 @@ function generateInvoicePreview(factura, cliente) {
                     <p>Av. Principal 123<br>Ciudad, País<br>Tel: (123) 456-7890</p>
                 </div>
                 <div class="invoice-number">
-                    ${factura.numeroFactura}
+                    ${factura.numero || factura.numeroFactura}
                 </div>
             </div>
 
@@ -337,12 +447,12 @@ function generateInvoicePreview(factura, cliente) {
                 <div>
                     <h4>Detalles de la Factura:</h4>
                     <p><strong>Fecha:</strong> ${new Date(
-                      factura.fechaFactura
+                      factura.fecha || factura.fechaFactura
                     ).toLocaleDateString()}<br>
                     <strong>Estado:</strong> <span class="status-badge status-${
-                      factura.estado
+                      (factura.estado || '').toLowerCase()
                     }">${
-    factura.estado.charAt(0).toUpperCase() + factura.estado.slice(1)
+    ((factura.estado || '').charAt(0).toUpperCase() + (factura.estado || '').slice(1).toLowerCase())
   }</span></p>
                 </div>
             </div>
@@ -423,6 +533,48 @@ async function printFactura(id) {
       }
     }
     
+    // Cargar productos desde el endpoint de detalles
+    try {
+      const detalles = await apiGet(`/api/facturas/${id}/detalles`);
+      
+      // Cargar lista de productos para mapear nombres si es necesario
+      let productosDisponibles = [];
+      try {
+        productosDisponibles = await apiGet('/api/productos');
+      } catch (e) {
+        console.warn("No se pudieron cargar productos disponibles:", e.message);
+      }
+      
+      factura.detalles = detalles.map(detalle => {
+        const idProducto = detalle.IdProducto || detalle.IDPRODUCTO || detalle.idProducto;
+        let nombreProducto = detalle.nombreProducto || detalle.NOMBREPRODUCTO || detalle.nombre_producto;
+        
+        // Si no tenemos el nombre, buscarlo en la lista de productos disponibles
+        if (!nombreProducto && idProducto && productosDisponibles.length > 0) {
+          const productoEncontrado = productosDisponibles.find(p => 
+            (p.idProducto || p.IdProducto) == idProducto);
+          if (productoEncontrado) {
+            nombreProducto = productoEncontrado.nombreProducto || productoEncontrado.nombre || 
+                            `Producto ${idProducto}`;
+          }
+        }
+        
+        if (!nombreProducto) {
+          nombreProducto = `Producto ${idProducto}`;
+        }
+        
+        return {
+          nombreProducto: nombreProducto,
+          precio: parseFloat(detalle.precioUni || detalle.PRECIOUNI || 0),
+          cantidad: parseInt(detalle.cantidad || detalle.CANTIDAD || 0),
+          descuento: parseFloat(detalle.descuento_item || detalle.DESCUENTO_ITEM || 0)
+        };
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar los detalles de la factura:", e.message);
+      factura.detalles = [];
+    }
+    
     printInvoice(factura, cliente);
   } catch (e) {
     if (e.status === 404) {
@@ -447,7 +599,7 @@ function printInvoice(factura = null, cliente = null) {
   printWindow.document.write(`
         <html>
             <head>
-                <title>Factura ${factura.numeroFactura}</title>
+                <title>Factura ${factura.numero || factura.numeroFactura}</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 20px; }
                     .invoice-preview { background: white; }
@@ -522,7 +674,7 @@ function addProductToInvoice() {
     invoiceProducts[existingIndex].precio = precio;
     invoiceProducts[existingIndex].descuento = descuento;
   } else {
-    invoiceProducts.push({
+    const newProduct = {
       idProducto: selectProducto.value,
       nombreProducto:
         selectProducto.options[selectProducto.selectedIndex].text.split(
@@ -531,8 +683,12 @@ function addProductToInvoice() {
       cantidad: cantidad,
       precio: precio,
       descuento: descuento,
-    });
+    };
+    console.log("DEBUG - Nuevo producto agregado:", newProduct);
+    invoiceProducts.push(newProduct);
   }
+  
+  console.log("DEBUG - Lista actual de productos:", invoiceProducts);
 
   document.getElementById("selectProducto").value = "";
   document.getElementById("cantidad").value = "";
@@ -607,9 +763,7 @@ async function handleFormSubmit(e) {
   
   const formData = new FormData(e.target);
   
-  // Nota: Por ahora el backend solo crea facturas básicas sin productos
-  // TODO: Implementar endpoint para agregar productos a facturas
-  console.log("Productos en factura (no se enviarán):", invoiceProducts);
+  console.log("Productos en factura:", invoiceProducts);
 
   let subtotal = 0;
   let totalDescuento = 0;
@@ -634,7 +788,17 @@ async function handleFormSubmit(e) {
     idCliente: idClienteValue ? parseInt(idClienteValue) : null,
     metodoPago: 'EFECTIVO',
     estado: formData.get("estado") || 'PENDIENTE',
-    observaciones: (formData.get("observaciones") || '').trim()
+    observaciones: (formData.get("observaciones") || '').trim(),
+    productos: invoiceProducts.length > 0 ? invoiceProducts.map((item, index) => {
+      const producto = {
+        idProducto: item.idProducto ? parseInt(item.idProducto) : null,
+        precio: parseFloat(item.precio || 0),
+        cantidad: parseInt(item.cantidad || 0),
+        descuento: parseFloat(item.descuento || 0)
+      };
+      console.log(`DEBUG - Producto ${index} enviado:`, producto);
+      return producto;
+    }).filter(p => p.idProducto !== null) : []
   };
 
   console.log("Datos del formulario:");
@@ -642,7 +806,8 @@ async function handleFormSubmit(e) {
   console.log("- Fecha:", facturaData.fecha);
   console.log("- ID Cliente:", facturaData.idCliente);
   console.log("- Estado:", facturaData.estado);
-  console.log("- Total:", facturaData.total);
+  console.log("- Productos:", facturaData.productos);
+  console.log("- Total calculado:", total.toFixed(2));
   
   // Validación mejorada
   if (!facturaData.numero || !facturaData.fecha || !facturaData.idCliente || isNaN(facturaData.idCliente)) {
@@ -673,8 +838,9 @@ async function handleFormSubmit(e) {
     
     console.log("Respuesta del servidor:", result);
     
-    if (invoiceProducts.length > 0) {
-      showAlert(`Factura ${actionType} correctamente. Nota: Los productos no se guardaron (funcionalidad pendiente)`, 'warning');
+    const productCount = invoiceProducts.length;
+    if (productCount > 0) {
+      showAlert(`Factura ${actionType} correctamente con ${productCount} producto${productCount > 1 ? 's' : ''}`, 'success');
     } else {
       showAlert(`Factura ${actionType} correctamente`, 'success');
     }

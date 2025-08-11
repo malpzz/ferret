@@ -22,14 +22,8 @@ function initializePedidosPage() {
     form.addEventListener("submit", handleFormSubmit);
   }
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("fechaPedido").value = today;

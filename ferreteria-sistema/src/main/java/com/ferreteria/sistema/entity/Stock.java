@@ -1,5 +1,6 @@
 package com.ferreteria.sistema.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -36,6 +37,7 @@ public class Stock {
     // Relación uno a uno con producto
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "IDPRODUCTO", nullable = false, unique = true)
+    @JsonIgnore
     private Producto producto;
 
     // Constructor por defecto
@@ -124,12 +126,117 @@ public class Stock {
     }
 
     public boolean esBajoMinimo() {
-        return producto != null && this.cantidad <= producto.getStockMinimo();
+        if (producto == null) return false;
+        try {
+            return this.cantidad <= producto.getStockMinimo();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Integer getDiferenciaMinimo() {
-        if (producto == null) return 0;
-        return producto.getStockMinimo() - this.cantidad;
+        if (producto == null) return null;
+        try {
+            return producto.getStockMinimo() - this.cantidad;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // Métodos para serialización JSON sin lazy loading
+    public Long getIdProducto() {
+        if (producto == null) return null;
+        try {
+            return producto.getIdProducto();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getNombreProducto() {
+        if (producto == null) return null;
+        try {
+            return producto.getNombreProducto();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getCodigoProducto() {
+        if (producto == null) return null;
+        try {
+            return producto.getCodigoProducto();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getCategoriaProducto() {
+        if (producto == null) return null;
+        try {
+            return producto.getCategoria();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public Integer getStockMinimo() {
+        if (producto == null) return null;
+        try {
+            return producto.getStockMinimo();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public ProductoInfo getProductoInfo() {
+        if (producto == null) return null;
+        try {
+            return new ProductoInfo(
+                producto.getIdProducto(),
+                producto.getNombreProducto(),
+                producto.getCodigoProducto(),
+                producto.getCategoria(),
+                producto.getMarca(),
+                producto.getUnidadMedida(),
+                producto.getStockMinimo()
+            );
+        } catch (Exception e) {
+            // En caso de lazy loading exception, devolver null
+            System.out.println("DEBUG - Error accediendo a producto lazy: " + e.getMessage());
+            return null;
+        }
+    }
+
+    // Clase interna para serializar información básica del producto
+    public static class ProductoInfo {
+        private Long idProducto;
+        private String nombreProducto;
+        private String codigoProducto;
+        private String categoria;
+        private String marca;
+        private String unidadMedida;
+        private Integer stockMinimo;
+
+        public ProductoInfo(Long idProducto, String nombreProducto, String codigoProducto,
+                           String categoria, String marca, String unidadMedida, Integer stockMinimo) {
+            this.idProducto = idProducto;
+            this.nombreProducto = nombreProducto;
+            this.codigoProducto = codigoProducto;
+            this.categoria = categoria;
+            this.marca = marca;
+            this.unidadMedida = unidadMedida;
+            this.stockMinimo = stockMinimo;
+        }
+
+        // Getters
+        public Long getIdProducto() { return idProducto; }
+        public String getNombreProducto() { return nombreProducto; }
+        public String getCodigoProducto() { return codigoProducto; }
+        public String getCategoria() { return categoria; }
+        public String getMarca() { return marca; }
+        public String getUnidadMedida() { return unidadMedida; }
+        public Integer getStockMinimo() { return stockMinimo; }
     }
 
     // Métodos equals, hashCode y toString

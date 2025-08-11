@@ -215,7 +215,10 @@ function renderTable(containerId, data, columns, actions = []) {
       if (actions.length > 0) {
         html += "<td>";
         actions.forEach((action) => {
-          html += `<button class="btn ${action.class}" onclick="${action.onclick}(${item.id})">${action.label}</button> `;
+          // Usar idField si está especificado, sino usar 'id' por defecto
+          const idField = action.idField || 'id';
+          const itemId = item[idField];
+          html += `<button class="btn ${action.class}" onclick="${action.onclick}(${itemId})">${action.label}</button> `;
         });
         html += "</td>";
       }
@@ -397,6 +400,40 @@ function saveRecord(key, record) {
 }
 
 window.generateId = generateId;
+// Logout functionality
+function logout() {
+  if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
+    // Crear formulario de logout para Spring Security
+    const logoutForm = document.createElement('form');
+    logoutForm.method = 'POST';
+    logoutForm.action = buildApiUrl('/logout'); // Usar buildApiUrl para incluir context path
+    
+    // Añadir token CSRF
+    const csrfHeaders = getCsrfHeader();
+    if (csrfHeaders && (csrfHeaders['X-CSRF-TOKEN'] || csrfHeaders._csrf)) {
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = '_csrf';
+      csrfInput.value = csrfHeaders['X-CSRF-TOKEN'] || csrfHeaders._csrf;
+      logoutForm.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(logoutForm);
+    logoutForm.submit();
+  }
+}
+
+// Initialize logout functionality for any page
+function initializeLogout() {
+  const logoutBtn = document.querySelector(".btn-logout");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      logout();
+    });
+  }
+}
+
 window.validateEmail = validateEmail;
 window.validatePhone = validatePhone;
 window.showAlert = showAlert;
@@ -416,3 +453,5 @@ window.formatCurrency = formatCurrency;
 window.searchTable = searchTable;
 window.logActivity = logActivity;
 window.saveRecord = saveRecord;
+window.logout = logout;
+window.initializeLogout = initializeLogout;

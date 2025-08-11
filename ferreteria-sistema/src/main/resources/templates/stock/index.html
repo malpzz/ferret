@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Stock - Sistema FerreterÃ­a</title>
+    <title>Gestión de Stock - Sistema Ferretería</title>
     <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,9 +32,9 @@
 
         <main class="main-content">
             <header class="header">
-                <h1>GestiÃ³n de Stock</h1>
+                <h1>Gestión de Stock</h1>
                 <div class="user-menu">
-                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
@@ -42,7 +42,7 @@
             <div class="page-content">
                 <div class="page-header">
                     <h1>Control de Stock</h1>
-                    <p>Administra el inventario de productos de tu ferreterÃ­a</p>
+                    <p>Administra el inventario de productos de tu ferretería</p>
                 </div>
 
                 <div class="content-card">
@@ -66,14 +66,7 @@
                     </div>
                 </div>
 
-                <div class="content-card mt-3" id="stockAlerts">
-                    <div class="card-header">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Alertas de Stock</h3>
-                    </div>
-                    <div class="card-body">
-                        <div id="alertsList"></div>
-                    </div>
-                </div>
+                <!-- Bloque de alertas eliminado -->
             </div>
         </main>
     </div>
@@ -110,7 +103,7 @@
 
                 <div class="form-group">
                     <label for="motivo">Motivo</label>
-                    <input type="text" id="motivo" name="motivo" class="form-control" placeholder="DescripciÃ³n del movimiento">
+                    <input type="text" id="motivo" name="motivo" class="form-control" placeholder="Descripción del movimiento">
                 </div>
 
                 <div class="d-flex justify-between gap-2 mt-3">
@@ -125,21 +118,42 @@
         </div>
     </div>
 
-    <div id="historyModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+    <!-- Modal para editar stock -->
+    <div id="editStockModal" class="modal">
+        <div class="modal-content modal-wide">
             <div class="modal-header">
-                <h3>Historial de Movimientos</h3>
-                <button class="modal-close" onclick="closeModal('historyModal')">
+                <h3>Editar Stock</h3>
+                <button class="modal-close" onclick="closeModal('editStockModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div id="historyContent">
-            </div>
-            <div class="d-flex justify-between gap-2 mt-3">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('historyModal')">
-                    Cerrar
-                </button>
-            </div>
+            <form id="editStockForm">
+                <input type="hidden" id="editStockId" name="editStockId">
+                
+                <div class="form-group">
+                    <label>Producto:</label>
+                    <p id="editProductoInfo" class="form-text text-muted"></p>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCantidad">Cantidad Actual *</label>
+                    <input type="number" id="editCantidad" name="editCantidad" class="form-control" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editUbicacion">Ubicación</label>
+                    <input type="text" id="editUbicacion" name="editUbicacion" class="form-control" placeholder="Ej: ALMACEN PRINCIPAL">
+                </div>
+
+                <div class="d-flex justify-between gap-2 mt-3">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editStockModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Actualizar Stock
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

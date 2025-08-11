@@ -15,30 +15,8 @@ function initializeProductosPage() {
   const form = document.getElementById("productoForm");
   form.addEventListener("submit", handleFormSubmit);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        // Crear formulario de logout para Spring Security
-        const logoutForm = document.createElement('form');
-        logoutForm.method = 'POST';
-        logoutForm.action = buildApiUrl('/logout');
-        
-        // Añadir token CSRF
-        const csrfHeaders = getCsrfHeader();
-        if (csrfHeaders._csrf) {
-          const csrfInput = document.createElement('input');
-          csrfInput.type = 'hidden';
-          csrfInput.name = csrfHeaders._csrf_parameterName || '_csrf';
-          csrfInput.value = csrfHeaders._csrf;
-          logoutForm.appendChild(csrfInput);
-        }
-        
-        document.body.appendChild(logoutForm);
-        logoutForm.submit();
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 }
 
 async function loadProductos() {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Facturas - Sistema FerreterÃ­a</title>
+    <title>Gestión de Facturas - Sistema Ferretería</title>
     <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,9 +32,9 @@
 
         <main class="main-content">
             <header class="header">
-                <h1>GestiÃ³n de Facturas</h1>
+                <h1>Gestión de Facturas</h1>
                 <div class="user-menu">
-                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
@@ -70,7 +70,7 @@
     </div>
 
     <div id="facturaModal" class="modal">
-        <div class="modal-content large-modal">
+        <div class="modal-content modal-wide">
             <div class="modal-header">
                 <h3 id="modalTitle">Nueva Factura</h3>
                 <button class="modal-close" onclick="closeModal('facturaModal')">
@@ -82,7 +82,7 @@
 
                 <div class="form-row">
                     <div class="form-group col-md-6">
-                        <label for="numeroFactura">NÃºmero de Factura *</label>
+                        <label for="numeroFactura">Número de Factura *</label>
                         <input type="text" id="numeroFactura" name="numeroFactura" class="form-control" required readonly>
                     </div>
                     <div class="form-group col-md-6">
@@ -193,7 +193,7 @@
     </div>
 
     <div id="viewFacturaModal" class="modal">
-        <div class="modal-content large-modal">
+        <div class="modal-content modal-wide">
             <div class="modal-header">
                 <h3>Detalles de la Factura</h3>
                 <button class="modal-close" onclick="closeModal('viewFacturaModal')">
@@ -219,9 +219,10 @@
     </div>
 
     <style>
-        .large-modal .modal-content {
-            max-width: 900px;
-            width: 90vw;
+        /* Usar clase global modal-wide para modales anchos */
+        .modal-content.modal-wide {
+            max-width: 1100px;
+            width: 95vw;
         }
         .invoice-products {
             border: 1px solid #e1e8ed;

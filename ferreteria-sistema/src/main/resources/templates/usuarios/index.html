@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Usuarios - Sistema FerreterÃ­a</title>
+    <title>Gestión de Usuarios - Sistema Ferretería</title>
     <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,9 +32,9 @@
 
         <main class="main-content">
             <header class="header">
-                <h1>GestiÃ³n de Usuarios</h1>
+                <h1>Gestión de Usuarios</h1>
                 <div class="user-menu">
-                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
@@ -77,18 +77,18 @@
                 <div class="form-group">
                     <label for="nombreUsuario">Nombre de Usuario *</label>
                     <input type="text" id="nombreUsuario" name="nombreUsuario" class="form-control" required>
-                    <small class="form-text">Usuario Ãºnico para iniciar sesiÃ³n</small>
+                    <small class="form-text">Usuario único para iniciar sesión</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="contraseÃ±a">ContraseÃ±a *</label>
-                    <input type="password" id="contraseÃ±a" name="contraseÃ±a" class="form-control" required>
-                    <small class="form-text">MÃ­nimo 6 caracteres</small>
+                    <label for="contraseña">Contraseña *</label>
+                    <input type="password" id="contraseña" name="contraseña" class="form-control" required>
+                    <small class="form-text">Mínimo 6 caracteres</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="confirmarContraseÃ±a">Confirmar ContraseÃ±a *</label>
-                    <input type="password" id="confirmarContraseÃ±a" name="confirmarContraseÃ±a" class="form-control" required>
+                    <label for="confirmarContraseña">Confirmar Contraseña *</label>
+                    <input type="password" id="confirmarContraseña" name="confirmarContraseña" class="form-control" required>
                 </div>
 
                 <div class="form-group">
@@ -126,7 +126,7 @@
                 </button>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-warning" onclick="resetPassword()">
-                        <i class="fas fa-key"></i> Resetear ContraseÃ±a
+                        <i class="fas fa-key"></i> Resetear Contraseña
                     </button>
                     <button type="button" class="btn btn-primary" onclick="editFromView()">
                         <i class="fas fa-edit"></i> Editar

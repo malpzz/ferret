@@ -288,6 +288,17 @@ public class Producto {
         return stock != null ? stock.getCantidad() : 0;
     }
 
+    // Setter auxiliar para mapear consultas que traen stock como columna
+    @Transient
+    public void setCantidadStock(Integer cantidad) {
+        if (cantidad == null) return;
+        if (this.stock == null) {
+            this.stock = new Stock();
+            this.stock.setProducto(this);
+        }
+        this.stock.setCantidad(cantidad);
+    }
+
     public boolean tieneStockSuficiente(Integer cantidadRequerida) {
         return getCantidadStock() >= cantidadRequerida;
     }

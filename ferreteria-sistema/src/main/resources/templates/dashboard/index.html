@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema FerreterÃ­a - Dashboard</title>
+    <title>Sistema Ferretería - Dashboard</title>
     <link rel="stylesheet" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="quick-actions">
-                    <h2>Acciones RÃ¡pidas</h2>
+                    <h2>Acciones Rápidas</h2>
                     <div class="actions-grid">
                         <a sec:authorize="hasAnyRole('ADMINISTRADOR','GERENTE','VENDEDOR')" th:href="@{/clientes}" class="action-card">
                             <i class="fas fa-user-plus"></i>

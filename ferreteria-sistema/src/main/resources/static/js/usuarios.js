@@ -16,14 +16,7 @@ function initializeUsuariosPage() {
   form.addEventListener("submit", handleFormSubmit);
 
   // Initialize logout functionality
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
-  }
+  initializeLogout();
 
   // Password confirmation validation
   const confirmPassword = document.getElementById("confirmarContraseña");
@@ -35,12 +28,26 @@ function initializeUsuariosPage() {
 async function loadUsuarios() {
   try {
     const usuarios = await apiGet('/api/usuarios');
-    renderUsuariosTable(usuarios.map(u => ({
-      id: u.idUsuario || u.id,
-      nombreUsuario: u.nombreUsuario,
-      nombreRol: (u.rol && u.rol.nombre) || '-',
-      idRol: (u.rol && (u.rol.idRol || u.rol.id)) || null,
-    })));
+    console.log('DEBUG - Usuarios recibidos:', usuarios); // Debug
+    
+    const usuariosMapped = usuarios.map(u => {
+      console.log('DEBUG - Usuario:', u); // Debug individual
+      return {
+        id: u.idUsuario || u.id,
+        nombreUsuario: u.nombreUsuario,
+        nombreRol: (u.rolInfo && u.rolInfo.nombre) || u.nombreRol || '-',
+        idRol: (u.rolInfo && u.rolInfo.idRol) || u.idRol || null,
+        nombre: u.nombre,
+        apellidos: u.apellidos,
+        email: u.email,
+        telefono: u.telefono,
+        activo: u.activo
+      };
+    });
+    
+    // Guardar en memoria para editUsuario
+    window.usuariosData = usuariosMapped;
+    renderUsuariosTable(usuariosMapped);
   } catch (e) {
     showAlert(`Error cargando usuarios: ${e.message}`, 'danger');
   }
@@ -100,11 +107,16 @@ function openAddModal() {
 }
 
 function editUsuario(id) {
-  const usuario = getRecord("usuarios", id);
+  // Buscar usuario en los datos cargados
+  const usuario = window.usuariosData ? window.usuariosData.find(u => u.id == id) : null;
   if (!usuario) {
     showAlert("Usuario no encontrado", "danger");
+    console.error("Usuario no encontrado, ID:", id);
+    console.error("Datos disponibles:", window.usuariosData);
     return;
   }
+
+  console.log("DEBUG - Editando usuario:", usuario);
 
   document.getElementById("modalTitle").textContent = "Editar Usuario";
   currentUsuarioId = id;
@@ -112,12 +124,12 @@ function editUsuario(id) {
   // Populate form
   const form = document.getElementById("usuarioForm");
   form.querySelector('[name="id"]').value = usuario.id;
-  form.querySelector('[name="nombreUsuario"]').value = usuario.nombreUsuario;
-  form.querySelector('[name="idRol"]').value = usuario.idRol;
+  form.querySelector('[name="nombreUsuario"]').value = usuario.nombreUsuario || '';
+  form.querySelector('[name="idRol"]').value = usuario.idRol || '';
 
   // Clear password fields and make them optional for editing
-  form.querySelector('[name="contraseña"]').value = "";
-  form.querySelector('[name="confirmarContraseña"]').value = "";
+  document.getElementById("contraseña").value = "";
+  document.getElementById("confirmarContraseña").value = "";
   document.getElementById("contraseña").required = false;
   document.getElementById("confirmarContraseña").required = false;
 
@@ -125,7 +137,8 @@ function editUsuario(id) {
 }
 
 function viewUsuario(id) {
-  const usuario = getRecord("usuarios", id);
+  // Buscar usuario en los datos cargados
+  const usuario = window.usuariosData ? window.usuariosData.find(u => u.id == id) : null;
   if (!usuario) {
     showAlert("Usuario no encontrado", "danger");
     return;
@@ -133,21 +146,25 @@ function viewUsuario(id) {
 
   currentUsuarioId = id;
 
-  const roles = loadData("roles");
-  const rol = roles.find((r) => r.id === usuario.idRol);
-
   const detailsHtml = `
         <div class="usuario-details">
             <div class="detail-row">
-                <strong>Nombre de Usuario:</strong> ${usuario.nombreUsuario}
+                <strong>Nombre de Usuario:</strong> ${usuario.nombreUsuario || 'N/A'}
             </div>
             <div class="detail-row">
-                <strong>Rol:</strong> ${rol ? rol.nombre : "Sin rol asignado"}
+                <strong>Nombre Completo:</strong> ${(usuario.nombre || '') + ' ' + (usuario.apellidos || '').trim() || 'N/A'}
             </div>
             <div class="detail-row">
-                <strong>Última modificación:</strong> ${
-                  usuario.fechaModificacion || "No disponible"
-                }
+                <strong>Email:</strong> ${usuario.email || 'N/A'}
+            </div>
+            <div class="detail-row">
+                <strong>Teléfono:</strong> ${usuario.telefono || 'N/A'}
+            </div>
+            <div class="detail-row">
+                <strong>Rol:</strong> ${usuario.nombreRol || "Sin rol asignado"}
+            </div>
+            <div class="detail-row">
+                <strong>Estado:</strong> ${usuario.activo ? 'Activo' : 'Inactivo'}
             </div>
         </div>
         <style>
@@ -217,9 +234,7 @@ function validatePasswordMatch() {
   const confirmPassword = document.getElementById("confirmarContraseña").value;
 
   if (confirmPassword && password !== confirmPassword) {
-    document
-      .getElementById("confirmarContraseña")
-      .setCustomValidity("Las contraseñas no coinciden");
+    document.getElementById("confirmarContraseña").setCustomValidity("Las contraseñas no coinciden");
   } else {
     document.getElementById("confirmarContraseña").setCustomValidity("");
   }

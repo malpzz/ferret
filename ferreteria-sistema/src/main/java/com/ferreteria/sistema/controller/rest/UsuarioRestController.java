@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -23,12 +24,22 @@ public class UsuarioRestController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<Usuario>> listar() {
-        return ResponseEntity.ok(usuarioService.obtenerTodos());
+        List<Usuario> usuarios = usuarioService.obtenerTodos();
+        System.out.println("DEBUG - Enviando " + usuarios.size() + " usuarios al frontend");
+        for (Usuario u : usuarios) {
+            System.out.println("Usuario: " + u.getIdUsuario() + " - " + u.getNombreUsuario() + 
+                             " (" + u.getNombreCompleto().trim() + ")");
+            System.out.println("  Rol info: " + (u.getRolInfo() != null ? 
+                u.getRolInfo().getNombre() + " (ID: " + u.getRolInfo().getIdRol() + ")" : "NULL"));
+        }
+        return ResponseEntity.ok(usuarios);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional(readOnly = true)
     public ResponseEntity<?> obtener(@PathVariable Long id) {
         return usuarioService.obtenerPorId(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
@@ -37,6 +48,7 @@ public class UsuarioRestController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional
     public ResponseEntity<?> crear(@RequestBody CrearUsuarioRequest req) {
         try {
             Usuario u = new Usuario();
@@ -61,6 +73,7 @@ public class UsuarioRestController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional
     public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody ActualizarUsuarioRequest req) {
         try {
             Usuario u = new Usuario();
@@ -100,6 +113,7 @@ public class UsuarioRestController {
 
     @PatchMapping("/{id}/estado")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Transactional
     public ResponseEntity<?> cambiarEstado(@PathVariable Long id, @RequestParam boolean activo) {
         try {
             return ResponseEntity.ok(usuarioService.cambiarEstado(id, activo));

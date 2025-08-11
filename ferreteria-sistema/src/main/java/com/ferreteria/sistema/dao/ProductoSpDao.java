@@ -61,12 +61,31 @@ public class ProductoSpDao {
     }
 
     public List<Producto> listar() {
-        SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA").withFunctionName("FN_LISTAR_PRODUCTOS")
-                .returningResultSet("RETURN_VALUE", mapper());
-        Map<String, Object> out = call.execute(new HashMap<>());
-        @SuppressWarnings("unchecked") List<Producto> list = (List<Producto>) out.get("RETURN_VALUE");
-        return list != null ? list : Collections.emptyList();
+        // Listar productos junto con stock actual (si existe)
+        try {
+            String sql = "SELECT p.IDPRODUCTO, p.NOMBREPRODUCTO, p.DESCRIPCION, p.CODIGO_PRODUCTO, p.CATEGORIA, p.MARCA, " +
+                         "p.PRECIO, p.PRECIO_COMPRA, p.UNIDAD_MEDIDA, p.STOCK_MINIMO, p.ACTIVO, p.IDPROVEEDOR, s.CANTIDAD AS STOCK_ACTUAL " +
+                         "FROM PRODUCTOS p LEFT JOIN STOCK s ON p.IDPRODUCTO = s.IDPRODUCTO";
+            List<Producto> productos = jdbcTemplate.query(sql, (rs, rowNum) -> {
+                Producto p = mapper().mapRow(rs, rowNum);
+                try {
+                    int stock = rs.getInt("STOCK_ACTUAL");
+                    if (!rs.wasNull()) {
+                        p.setCantidadStock(stock);
+                    }
+                } catch (Exception ignored) {}
+                return p;
+            });
+            return productos;
+        } catch (Exception ex) {
+            // Fallback al paquete si existe
+            SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
+                    .withCatalogName("PKG_FERRETERIA").withFunctionName("FN_LISTAR_PRODUCTOS")
+                    .returningResultSet("RETURN_VALUE", mapper());
+            Map<String, Object> out = call.execute(new HashMap<>());
+            @SuppressWarnings("unchecked") List<Producto> list = (List<Producto>) out.get("RETURN_VALUE");
+            return list != null ? list : Collections.emptyList();
+        }
     }
 
     public Optional<Producto> obtenerPorId(Long id) {

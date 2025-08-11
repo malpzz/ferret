@@ -11,27 +11,20 @@ function initializeRolesPage() {
   const form = document.getElementById("rolForm");
   form.addEventListener("submit", handleFormSubmit);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 }
 
 async function loadRoles() {
   try {
     const roles = await apiGet('/api/roles');
-    renderRolesTable(roles.map(r => ({
-      id: r.idRol || r.id,
-      nombre: r.nombre,
-      descripcion: r.descripcion || '',
-      permisos: r.permisos || [],
-      usuariosCount: r.usuariosCount || 0,
-    })));
+    console.log('DEBUG - Roles recibidos del backend:', roles);
+    
+    // Los datos ya vienen con la estructura correcta del backend
+    window.rolesData = roles; // Guardar para uso posterior
+    renderRolesTable(roles);
   } catch (e) {
+    console.error('Error cargando roles:', e);
     showAlert(`Error cargando roles: ${e.message}`, 'danger');
   }
 }
@@ -44,11 +37,6 @@ function renderRolesTable(roles) {
       key: "usuariosCount",
       label: "Usuarios",
       format: (value) => `<span class="users-count">${value}</span>`,
-    },
-    {
-      key: "permisos",
-      label: "Permisos",
-      format: (value) => (value ? `${value.length} permisos` : "0 permisos"),
     },
   ];
 
@@ -77,7 +65,6 @@ function openAddModal() {
   document.getElementById("modalTitle").textContent = "Nuevo Rol";
   clearForm("rolForm");
   currentRolId = null;
-  clearPermissions();
   openModal("rolModal");
 }
 
@@ -85,7 +72,9 @@ async function editRol(id) {
   let rol;
   try {
     rol = await apiGet(`/api/roles/${id}`);
-  } catch {
+    console.log('DEBUG - Rol para editar:', rol);
+  } catch (e) {
+    console.error('Error obteniendo rol:', e);
     showAlert("Rol no encontrado", "danger");
     return;
   }
@@ -94,64 +83,44 @@ async function editRol(id) {
   currentRolId = id;
 
   const form = document.getElementById("rolForm");
-  form.querySelector('[name="id"]').value = rol.id;
+  form.querySelector('[name="id"]').value = rol.idRol;
   form.querySelector('[name="nombre"]').value = rol.nombre;
   form.querySelector('[name="descripcion"]').value = rol.descripcion || "";
-
-  clearPermissions();
-  if (rol.permisos && Array.isArray(rol.permisos)) {
-    rol.permisos.forEach((permiso) => {
-      const checkbox = form.querySelector(
-        `[name="permissions"][value="${permiso}"]`
-      );
-      if (checkbox) {
-        checkbox.checked = true;
-      }
-    });
-  }
 
   openModal("rolModal");
 }
 
-function viewRol(id) {
-  const rol = getRecord("roles", id);
+async function viewRol(id) {
+  // Buscar el rol en los datos cargados
+  const rol = window.rolesData?.find(r => r.idRol == id);
   if (!rol) {
     showAlert("Rol no encontrado", "danger");
     return;
   }
 
   currentRolId = id;
-  const usuarios = loadData("usuarios");
-  const userCount = usuarios.filter((user) => user.idRol === rol.id).length;
+  
+  // Cargar usuarios específicos de este rol
+  let usuariosDelRol = [];
+  try {
+    usuariosDelRol = await apiGet(`/api/roles/${id}/usuarios`);
+    console.log('DEBUG - Usuarios del rol:', usuariosDelRol);
+  } catch (e) {
+    console.error('Error cargando usuarios del rol:', e);
+  }
 
-  const permissionsHtml =
-    rol.permisos && rol.permisos.length > 0
-      ? rol.permisos
-          .map((permiso) => {
-            const permissionLabels = {
-              clientes_ver: "Ver clientes",
-              clientes_crear: "Crear clientes",
-              clientes_editar: "Editar clientes",
-              clientes_eliminar: "Eliminar clientes",
-              productos_ver: "Ver productos",
-              productos_crear: "Crear productos",
-              productos_editar: "Editar productos",
-              productos_eliminar: "Eliminar productos",
-              stock_ver: "Ver stock",
-              stock_modificar: "Modificar stock",
-              ventas_ver: "Ver facturas",
-              ventas_crear: "Crear facturas",
-              ventas_anular: "Anular facturas",
-              admin_usuarios: "Gestionar usuarios",
-              admin_roles: "Gestionar roles",
-              admin_reportes: "Ver reportes",
-            };
-            return `<span class="permission-tag">${
-              permissionLabels[permiso] || permiso
-            }</span>`;
-          })
-          .join("")
-      : '<span class="text-muted">Sin permisos asignados</span>';
+  // Generar HTML de usuarios
+  const usuariosHtml = usuariosDelRol.length > 0
+    ? usuariosDelRol
+        .map(usuario => 
+          `<div class="user-item">
+             <i class="fas fa-user"></i>
+             <span class="user-name">${usuario.nombreCompleto || usuario.nombreUsuario}</span>
+             <span class="user-email">(${usuario.email})</span>
+           </div>`
+        )
+        .join("")
+    : '<span class="text-muted">No hay usuarios asignados a este rol</span>';
 
   const detailsHtml = `
         <div class="rol-details">
@@ -164,12 +133,12 @@ function viewRol(id) {
                 }
             </div>
             <div class="detail-row">
-                <strong>Usuarios asignados:</strong> <span class="users-count">${userCount}</span>
+                <strong>Usuarios asignados:</strong> <span class="users-count">${rol.usuariosCount}</span>
             </div>
             <div class="detail-row">
-                <strong>Permisos:</strong>
-                <div class="permissions-display mt-2">
-                    ${permissionsHtml}
+                <strong>Lista de usuarios:</strong>
+                <div class="users-display mt-2">
+                    ${usuariosHtml}
                 </div>
             </div>
         </div>
@@ -181,18 +150,30 @@ function viewRol(id) {
             .rol-details .detail-row:last-child {
                 border-bottom: none;
             }
-            .permission-tag {
-                display: inline-block;
-                background: #e3f2fd;
-                color: #1976d2;
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 0.75rem;
-                margin: 2px;
-            }
-            .permissions-display {
+            .users-display {
                 max-height: 200px;
                 overflow-y: auto;
+            }
+            .user-item {
+                display: flex;
+                align-items: center;
+                padding: 5px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .user-item:last-child {
+                border-bottom: none;
+            }
+            .user-item i {
+                margin-right: 8px;
+                color: #6c757d;
+            }
+            .user-name {
+                font-weight: 500;
+                margin-right: 8px;
+            }
+            .user-email {
+                color: #6c757d;
+                font-size: 0.85rem;
             }
         </style>
     `;
@@ -217,13 +198,6 @@ async function deleteRol(id) {
   }
 }
 
-function clearPermissions() {
-  const checkboxes = document.querySelectorAll('[name="permissions"]');
-  checkboxes.forEach((checkbox) => {
-    checkbox.checked = false;
-  });
-}
-
 async function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -231,8 +205,9 @@ async function handleFormSubmit(e) {
   const rolData = {
     nombre: formData.get("nombre").trim(),
     descripcion: formData.get("descripcion").trim(),
-    permisos: formData.getAll("permissions"),
   };
+
+  console.log('DEBUG - Datos del rol a enviar:', rolData);
 
   if (!rolData.nombre) {
     showAlert("El nombre del rol es obligatorio", "danger");
@@ -241,83 +216,22 @@ async function handleFormSubmit(e) {
 
   try {
     if (currentRolId) {
-      await apiPut(`/api/roles/${currentRolId}`, rolData);
+      const resultado = await apiPut(`/api/roles/${currentRolId}`, rolData);
+      console.log('DEBUG - Rol actualizado:', resultado);
     } else {
-      await apiPost('/api/roles', rolData);
+      const resultado = await apiPost('/api/roles', rolData);
+      console.log('DEBUG - Rol creado:', resultado);
     }
   } catch (e) {
+    console.error('Error guardando rol:', e);
     showAlert(e.data?.mensaje || `Error al guardar rol: ${e.message}`, 'danger');
     return;
   }
   await loadRoles();
   closeModal("rolModal");
-  showAlert("Rol guardado", "success");
+  showAlert("Rol guardado correctamente", "success");
 }
 
-function initializeSampleRoles() {
-  const roles = loadData("roles");
-  if (roles.length === 0) {
-    const sampleRoles = [
-      {
-        id: "1",
-        nombre: "Administrador",
-        descripcion: "Acceso completo al sistema",
-        permisos: [
-          "clientes_ver",
-          "clientes_crear",
-          "clientes_editar",
-          "clientes_eliminar",
-          "productos_ver",
-          "productos_crear",
-          "productos_editar",
-          "productos_eliminar",
-          "stock_ver",
-          "stock_modificar",
-          "ventas_ver",
-          "ventas_crear",
-          "ventas_anular",
-          "admin_usuarios",
-          "admin_roles",
-          "admin_reportes",
-        ],
-        fechaCreacion: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        nombre: "Vendedor",
-        descripcion: "Personal de ventas con acceso limitado",
-        permisos: [
-          "clientes_ver",
-          "clientes_crear",
-          "clientes_editar",
-          "productos_ver",
-          "stock_ver",
-          "ventas_ver",
-          "ventas_crear",
-        ],
-        fechaCreacion: new Date().toISOString(),
-      },
-      {
-        id: "3",
-        nombre: "Almacenista",
-        descripcion: "Gestión de inventario y productos",
-        permisos: [
-          "productos_ver",
-          "productos_crear",
-          "productos_editar",
-          "stock_ver",
-          "stock_modificar",
-        ],
-        fechaCreacion: new Date().toISOString(),
-      },
-    ];
-
-    saveData("roles", sampleRoles);
-  }
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  initializeSampleRoles();
-});
+// Funcionalidad de roles completamente integrada con el backend
 
 

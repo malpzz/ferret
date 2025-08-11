@@ -11,31 +11,8 @@ function initializeEmpleadosPage() {
   const form = document.getElementById("empleadoForm");
   form.addEventListener("submit", handleFormSubmit);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        // Crear un formulario para logout POST a Spring Security
-        const logoutForm = document.createElement('form');
-        logoutForm.method = 'POST';
-        logoutForm.action = '/logout';
-        
-        // Agregar token CSRF si existe
-        const csrfHeader = getCsrfHeader();
-        if (csrfHeader['X-CSRF-TOKEN']) {
-          const csrfInput = document.createElement('input');
-          csrfInput.type = 'hidden';
-          csrfInput.name = '_csrf';
-          csrfInput.value = csrfHeader['X-CSRF-TOKEN'];
-          logoutForm.appendChild(csrfInput);
-        }
-        
-        document.body.appendChild(logoutForm);
-        logoutForm.submit();
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 }
 
 async function loadEmpleados() {
@@ -117,15 +94,15 @@ async function viewEmpleado(id) {
     const empleado = await apiGet(`/api/empleados/${id}`);
     currentEmpleadoId = id;
 
-    // Para horarios, usar la API si está disponible, sino mock data
-    let horarios = [];
+    // Cargar horarios del empleado desde la API
+    let empleadoHorarios = [];
     try {
-      horarios = await apiGet('/api/horarios');
+      empleadoHorarios = await apiGet(`/api/horarios/empleado/${id}`);
+      console.log('DEBUG - Horarios del empleado:', empleadoHorarios);
     } catch (e) {
-      horarios = loadData("horarios") || [];
+      console.log('DEBUG - Error cargando horarios del empleado:', e);
+      empleadoHorarios = [];
     }
-    
-    const empleadoHorarios = horarios.filter((h) => h.idEmpleado === parseInt(id));
 
     const detailsHtml = `
         <div class="empleado-details">
@@ -156,8 +133,12 @@ async function viewEmpleado(id) {
                   empleadoHorarios.length > 0
                     ? `<ul>${empleadoHorarios
                         .map(
-                          (h) =>
-                            `<li>${h.dia}: ${h.horaEntrada} - ${h.horaSalida}</li>`
+                          (h) => {
+                            const fecha = h.fecha ? new Date(h.fecha).toLocaleDateString() : 'Sin fecha';
+                            const entrada = h.horaEntrada ? formatHour(h.horaEntrada) : '-';
+                            const salida = h.horaSalida ? formatHour(h.horaSalida) : '-';
+                            return `<li><strong>${fecha}:</strong> ${entrada} - ${salida}</li>`;
+                          }
                         )
                         .join("")}</ul>`
                     : '<span class="text-muted">Sin horarios asignados</span>'
@@ -194,8 +175,17 @@ function editFromView() {
 function manageSchedule() {
   if (currentEmpleadoId) {
     closeModal("viewEmpleadoModal");
-    window.location.href = `/horarios?empleado=${currentEmpleadoId}`;
+    // Redirigir al módulo de horarios con el empleado preseleccionado
+    window.location.href = buildApiUrl('/horarios').replace('/api', '') + `?empleadoId=${currentEmpleadoId}`;
   }
+}
+
+// Función para formatear horas decimales a HH:MM
+function formatHour(decimalHour) {
+  if (!decimalHour) return "-";
+  const hours = Math.floor(decimalHour);
+  const minutes = Math.round((decimalHour - hours) * 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
 async function deleteEmpleado(id) {

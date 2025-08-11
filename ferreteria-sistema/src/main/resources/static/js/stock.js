@@ -1,389 +1,319 @@
-function initializeStockPage() {
-  document.addEventListener("DOMContentLoaded", function () {
-    loadStock();
-    loadAlerts();
-    initializeStockPage();
-    loadProductsSelect();
-  });
-}
+// Stock Management JavaScript
+
+document.addEventListener("DOMContentLoaded", function () {
+  initializeStockPage();
+  loadStock();
+  loadProductsSelect();
+});
 
 function initializeStockPage() {
   searchTable("searchStock", "#stockTable tbody");
 
   const filterSelect = document.getElementById("filterStock");
-  filterSelect.addEventListener("change", filterStock);
-
-  const form = document.getElementById("movementForm");
-  form.addEventListener("submit", handleMovementSubmit);
-
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
+  if (filterSelect) {
+    filterSelect.addEventListener("change", filterStock);
   }
 
+  const form = document.getElementById("movementForm");
+  if (form) {
+    form.addEventListener("submit", handleMovementSubmit);
+  }
+
+  // Initialize logout functionality
+  initializeLogout();
+
+  // Check for producto parameter in URL
   const urlParams = new URLSearchParams(window.location.search);
   const productoId = urlParams.get("producto");
   if (productoId) {
     setTimeout(() => {
       openMovementModal();
-      document.getElementById("producto").value = productoId;
+      const productoSelect = document.getElementById("producto");
+      if (productoSelect) {
+        productoSelect.value = productoId;
+      }
     }, 500);
   }
 }
 
 async function loadStock() {
   try {
-    const productos = await apiGet('/api/productos');
-    const stockData = productos.map((p) => ({
-      id: p.idProducto || p.id,
-      nombreProducto: p.nombreProducto,
-      descripcion: p.descripcion,
-      precio: p.precio || 0,
-      cantidad: (p.stock && p.stock.cantidad) || p.cantidadStock || 0,
-    }));
-    renderStockTable(stockData);
+    console.log('DEBUG - Cargando stock desde API...');
+    const stocks = await apiGet('/api/stock');
+    console.log('DEBUG - Stocks recibidos:', stocks);
+    
+    window.stockData = stocks; // Guardar para uso posterior
+    renderStockTable(stocks);
   } catch (e) {
+    console.error('Error cargando stock:', e);
     showAlert(`Error cargando stock: ${e.message}`, 'danger');
   }
 }
 
 function renderStockTable(stockData) {
   const columns = [
-    { key: "nombreProducto", label: "Producto" },
+    { 
+      key: "nombreProducto", 
+      label: "Producto",
+      format: (value, item) => {
+        const producto = item.productoInfo || {};
+        return producto.nombreProducto || 'Sin nombre';
+      }
+    },
+    { 
+      key: "codigoProducto", 
+      label: "Código",
+      format: (value, item) => {
+        const producto = item.productoInfo || {};
+        return producto.codigoProducto || '-';
+      }
+    },
+    { 
+      key: "categoria", 
+      label: "Categoría",
+      format: (value, item) => {
+        const producto = item.productoInfo || {};
+        return producto.categoria || '-';
+      }
+    },
     {
       key: "cantidad",
       label: "Stock Actual",
-      format: (value, item) => {
-        let className = "stock-good";
-        let icon = "fas fa-check-circle";
-        let color = "#2ecc71";
-
-        if (value === 0) {
-          className = "stock-out";
-          icon = "fas fa-times-circle";
-          color = "#e74c3c";
-        } else if (value < 10) {
-          className = "stock-low";
-          icon = "fas fa-exclamation-triangle";
-          color = "#f39c12";
-        }
-
-        return `<span class="${className}"><i class="${icon}" style="color: ${color}; margin-right: 5px;"></i>${value} unidades</span>`;
-      },
+      format: (value) => `${value || 0} uds`
     },
     {
-      key: "precio",
-      label: "Precio Unit.",
-      format: (value) => formatCurrency(value),
+      key: "stockMinimo",
+      label: "Stock Mínimo",
+      format: (value, item) => {
+        const producto = item.productoInfo || {};
+        return `${producto.stockMinimo || 0} uds`;
+      }
     },
+    {
+      key: "estado",
+      label: "Estado",
+      format: (value, item) => {
+        const producto = item.productoInfo || {};
+        const stockMinimo = producto.stockMinimo || 0;
+        const cantidad = item.cantidad || 0;
+        
+        if (cantidad === 0) {
+          return '<span class="badge bg-danger">Sin Stock</span>';
+        } else if (cantidad <= stockMinimo) {
+          return '<span class="badge bg-warning">Bajo Mínimo</span>';
+        } else {
+          return '<span class="badge bg-success">Disponible</span>';
+        }
+      }
+    },
+    {
+      key: "ubicacion",
+      label: "Ubicación",
+      format: (value) => value || 'ALMACEN PRINCIPAL'
+    }
   ];
 
   const actions = [
     {
-      label: '<i class="fas fa-history"></i>',
-      class: "btn-info",
-      onclick: "viewHistory",
+      label: "Movimiento",
+      class: "btn-primary btn-sm",
+      onclick: "openMovementModal",
+      idField: "idStock"
     },
     {
-      label: '<i class="fas fa-plus"></i>',
-      class: "btn-success",
-      onclick: "quickEntry",
-    },
-    {
-      label: '<i class="fas fa-minus"></i>',
-      class: "btn-warning",
-      onclick: "quickExit",
-    },
+      label: "Editar",
+      class: "btn-secondary btn-sm",
+      onclick: "editStock",
+      idField: "idStock"
+    }
   ];
 
-  renderTable("stockTable", stockData, columns, actions);
+  console.log('DEBUG - Renderizando tabla con stocks:', stockData.map(s => ({
+    id: s.idStock,
+    producto: s.productoInfo?.nombreProducto,
+    cantidad: s.cantidad
+  })));
 
-  setTimeout(() => {
-    const rows = document.querySelectorAll("#stockTable tbody tr");
-    rows.forEach((row, index) => {
-      const stock = stockData[index];
-      if (stock) {
-        if (stock.cantidad === 0) {
-          row.classList.add("stock-out");
-        } else if (stock.cantidad < 10) {
-          row.classList.add("stock-low");
-        } else {
-          row.classList.add("stock-good");
-        }
-      }
-    });
-  }, 100);
+  renderTable("stockTable", stockData, columns, actions);
 }
 
-async function filterStock() {
-  const filter = document.getElementById("filterStock").value;
-  const productos = await apiGet('/api/productos');
-  let filteredData = productos.map((p) => ({
-    id: p.idProducto || p.id,
-    nombreProducto: p.nombreProducto,
-    descripcion: p.descripcion,
-    precio: p.precio || 0,
-    cantidad: (p.stock && p.stock.cantidad) || p.cantidadStock || 0,
-  }));
+async function loadProductsSelect() {
+  try {
+    const productos = await apiGet('/api/productos');
+    
+    const select = document.getElementById("producto");
+    if (select) {
+      select.innerHTML = '<option value="">Seleccione un producto</option>';
+      
+      productos.forEach((producto) => {
+        const option = document.createElement("option");
+        option.value = producto.idProducto || producto.id;
+        option.textContent = `${producto.nombreProducto} - ${producto.categoria || ''}`;
+        select.appendChild(option);
+      });
+    }
+    
+    const editSelect = document.getElementById("editProducto");
+    if (editSelect) {
+      editSelect.innerHTML = '<option value="">Seleccione un producto</option>';
+      
+      productos.forEach((producto) => {
+        const option = document.createElement("option");
+        option.value = producto.idProducto || producto.id;
+        option.textContent = `${producto.nombreProducto} - ${producto.categoria || ''}`;
+        editSelect.appendChild(option);
+      });
+    }
+  } catch (e) {
+    console.error('Error cargando productos:', e);
+  }
+}
 
-  switch (filter) {
-    case "bajo":
-      filteredData = filteredData.filter(
-        (item) => item.cantidad > 0 && item.cantidad < 10
-      );
-      break;
-    case "agotado":
-      filteredData = filteredData.filter((item) => item.cantidad === 0);
-      break;
-    case "disponible":
-      filteredData = filteredData.filter((item) => item.cantidad > 0);
-      break;
+function filterStock() {
+  const filter = document.getElementById("filterStock").value;
+  let filteredData = [...window.stockData];
+
+  if (filter === "bajo-minimo") {
+    filteredData = filteredData.filter(stock => {
+      const producto = stock.productoInfo || {};
+      return stock.cantidad <= (producto.stockMinimo || 0);
+    });
+  } else if (filter === "sin-stock") {
+    filteredData = filteredData.filter(stock => stock.cantidad === 0);
   }
 
   renderStockTable(filteredData);
 }
 
-async function loadProductsSelect() {
-  const productos = await apiGet('/api/productos');
-  const select = document.getElementById("producto");
-
-  select.innerHTML = '<option value="">Seleccione un producto</option>';
-  productos.forEach((producto) => {
-    const option = document.createElement("option");
-    option.value = producto.id;
-    option.textContent = `${producto.nombreProducto} - ${formatCurrency(
-      producto.precio
-    )}`;
-    select.appendChild(option);
-  });
-}
-
-function loadAlerts() {
-  const productos = loadData("productos");
-  const stock = loadData("stock");
-  const alertsList = document.getElementById("alertsList");
-
-  const alerts = [];
-
-  productos.forEach((producto) => {
-    const stockInfo = stock.find((s) => s.idProducto === producto.id);
-    const cantidad = stockInfo ? stockInfo.cantidad : 0;
-
-    if (cantidad === 0) {
-      alerts.push({
-        type: "danger",
-        icon: "fas fa-times-circle",
-        message: `${producto.nombreProducto} está agotado`,
-        action: `Reponer stock del producto ${producto.nombreProducto}`,
-      });
-    } else if (cantidad < 10) {
-      alerts.push({
-        type: "warning",
-        icon: "fas fa-exclamation-triangle",
-        message: `${producto.nombreProducto} tiene stock bajo (${cantidad} unidades)`,
-        action: `Considerar reponer stock de ${producto.nombreProducto}`,
-      });
+function openMovementModal(stockId = null) {
+  if (stockId && window.stockData) {
+    const stock = window.stockData.find(s => s.idStock == stockId);
+    if (stock && stock.productoInfo) {
+      const productoSelect = document.getElementById("producto");
+      if (productoSelect) {
+        productoSelect.value = stock.productoInfo.idProducto;
+      }
     }
-  });
-
-  if (alerts.length === 0) {
-    alertsList.innerHTML = `
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> No hay alertas de stock en este momento
-            </div>
-        `;
-  } else {
-    alertsList.innerHTML = alerts
-      .map(
-        (alert) => `
-            <div class="alert alert-${alert.type}">
-                <i class="${alert.icon}"></i>
-                <strong>${alert.message}</strong><br>
-                <small>${alert.action}</small>
-            </div>
-        `
-      )
-      .join("");
   }
-}
-
-function openMovementModal() {
-  clearForm("movementForm");
-  loadProductsSelect();
+  
+  // Limpiar el formulario
+  const form = document.getElementById("movementForm");
+  if (form) {
+    form.reset();
+    if (stockId && window.stockData) {
+      const stock = window.stockData.find(s => s.idStock == stockId);
+      if (stock) {
+        document.getElementById("producto").value = stock.productoInfo?.idProducto || '';
+      }
+    }
+  }
+  
   openModal("movementModal");
 }
 
-function quickEntry(productId) {
-  openMovementModal();
-  document.getElementById("producto").value = productId;
-  document.getElementById("tipoMovimiento").value = "entrada";
-}
-
-function quickExit(productId) {
-  const stock = loadData("stock");
-  const stockInfo = stock.find((s) => s.idProducto === productId);
-  const currentStock = stockInfo ? stockInfo.cantidad : 0;
-
-  if (currentStock === 0) {
-    showAlert("No hay stock disponible para dar salida", "warning");
+function editStock(stockId) {
+  const stock = window.stockData?.find(s => s.idStock == stockId);
+  if (!stock) {
+    showAlert("Stock no encontrado", "danger");
     return;
   }
 
-  openMovementModal();
-  document.getElementById("producto").value = productId;
-  document.getElementById("tipoMovimiento").value = "salida";
+  // Poblar el formulario de edición
+  document.getElementById("editStockId").value = stock.idStock;
+  document.getElementById("editCantidad").value = stock.cantidad;
+  document.getElementById("editUbicacion").value = stock.ubicacion || '';
+  
+  const productoInfo = stock.productoInfo || {};
+  document.getElementById("editProductoInfo").textContent = 
+    `${productoInfo.nombreProducto} (${productoInfo.codigoProducto})`;
 
-  const cantidadInput = document.getElementById("cantidad");
-  cantidadInput.setAttribute("max", currentStock);
+  openModal("editStockModal");
 }
 
-function viewHistory(productId) {
-  const producto = null;
-  const movements = JSON.parse(localStorage.getItem("stockMovements") || "[]");
-  const productMovements = movements.filter((m) => m.idProducto === productId);
-
-  const historyContent = document.getElementById("historyContent");
-
-  if (productMovements.length === 0) {
-    historyContent.innerHTML = `
-            <div class="alert alert-info">
-                No hay movimientos registrados para ${producto.nombreProducto}
-            </div>
-        `;
-  } else {
-    historyContent.innerHTML = `
-            <h4>Historial de Movimientos - ${producto.nombreProducto}</h4>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Tipo</th>
-                            <th>Cantidad</th>
-                            <th>Stock Resultante</th>
-                            <th>Motivo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${productMovements
-                          .map(
-                            (movement) => `
-                            <tr>
-                                <td>${new Date(
-                                  movement.fecha
-                                ).toLocaleDateString("es-AR")}</td>
-                                <td>
-                                    <span class="badge ${
-                                      movement.tipo === "entrada"
-                                        ? "badge-success"
-                                        : "badge-warning"
-                                    }">
-                                        ${movement.tipo.toUpperCase()}
-                                    </span>
-                                </td>
-                                <td>${movement.cantidad}</td>
-                                <td>${movement.stockResultante}</td>
-                                <td>${movement.motivo || "-"}</td>
-                            </tr>
-                        `
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
-            </div>
-            <style>
-                .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
-                .badge-success { background: #2ecc71; color: white; }
-                .badge-warning { background: #f39c12; color: white; }
-            </style>
-        `;
-  }
-
-  openModal("historyModal");
-}
-
-function handleMovementSubmit(e) {
+async function handleEditSubmit(e) {
   e.preventDefault();
 
   const formData = new FormData(e.target);
-  const productId = parseInt(formData.get("producto"));
+  const stockId = formData.get("editStockId");
+  const cantidad = parseInt(formData.get("editCantidad"));
+  const ubicacion = formData.get("editUbicacion");
+
+  if (!stockId || cantidad < 0) {
+    showAlert("Datos inválidos", "danger");
+    return;
+  }
+
+  try {
+    const updateData = {
+      cantidad: cantidad,
+      ubicacion: ubicacion || "ALMACEN PRINCIPAL"
+    };
+
+    await apiPut(`/api/stock/${stockId}`, updateData);
+    showAlert("Stock actualizado correctamente", "success");
+    
+    closeModal("editStockModal");
+    await loadStock();
+  } catch (e) {
+    console.error('Error actualizando stock:', e);
+    showAlert(e.data?.mensaje || `Error actualizando stock: ${e.message}`, 'danger');
+  }
+}
+
+async function handleMovementSubmit(e) {
+  e.preventDefault();
+
+  const formData = new FormData(e.target);
+  const idProducto = parseInt(formData.get("producto"));
   const tipo = formData.get("tipoMovimiento");
   const cantidad = parseInt(formData.get("cantidad"));
   const motivo = formData.get("motivo").trim();
 
-  if (!productId || !tipo || !cantidad) {
+  if (!idProducto || !tipo || !cantidad || cantidad <= 0) {
     showAlert("Todos los campos obligatorios son requeridos", "danger");
     return;
   }
 
-  const stock = loadData("stock");
-  const stockInfo = stock.find((s) => s.idProducto === productId);
-  const currentStock = stockInfo ? stockInfo.cantidad : 0;
+  try {
+    const movementData = {
+      idProducto: idProducto,
+      tipo: tipo,
+      cantidad: cantidad,
+      motivo: motivo || `${tipo.toUpperCase()} de stock`
+    };
 
-  let newStock;
-  if (tipo === "entrada") {
-    newStock = currentStock + cantidad;
-  } else {
-    if (cantidad > currentStock) {
-      showAlert("No hay suficiente stock para la salida solicitada", "danger");
-      return;
-    }
-    newStock = currentStock - cantidad;
-  }
+    console.log('DEBUG - Enviando movimiento:', movementData);
 
-  if (stockInfo) {
-    stockInfo.cantidad = newStock;
-  } else {
-    stock.push({
-      id: generateId(stock),
-      idProducto: productId,
-      cantidad: newStock,
-    });
-  }
-
-  saveData("stock", stock);
-
-  const movements = JSON.parse(localStorage.getItem("stockMovements") || "[]");
-  const movement = {
-    id: generateId(movements),
-    idProducto: productId,
-    tipo,
-    cantidad,
-    stockAnterior: currentStock,
-    stockResultante: newStock,
-    motivo,
-    fecha: new Date().toISOString(),
-    usuario: "Admin",
-  };
-
-  movements.unshift(movement);
-  localStorage.setItem("stockMovements", JSON.stringify(movements));
-
-  loadStock();
-  loadAlerts();
-  closeModal("movementModal");
-
-  const producto = getRecord("productos", productId);
-  showAlert(
-    `Movimiento de stock registrado correctamente para ${producto.nombreProducto}`,
-    "success"
-  );
-
-  if (typeof addActivity === "function") {
-    const activityDesc = `${tipo.toUpperCase()}: ${cantidad} unidades de ${
-      producto.nombreProducto
-    }`;
-    addActivity("stock", "Movimiento de stock", activityDesc);
+    const response = await apiPost('/api/stock/movimiento', movementData);
+    showAlert(response.mensaje || "Movimiento registrado correctamente", "success");
+    
+    closeModal("movementModal");
+    document.getElementById("movementForm").reset();
+    
+    await loadStock();
+  } catch (e) {
+    console.error('Error en movimiento de stock:', e);
+    showAlert(e.data?.mensaje || `Error en movimiento: ${e.message}`, 'danger');
   }
 }
 
+function quickEntry(productId, cantidad = 1) {
+  openMovementModal();
+  document.getElementById("producto").value = productId;
+  document.getElementById("tipoMovimiento").value = "entrada";
+  document.getElementById("cantidad").value = cantidad;
+}
+
+// Inicializar event listeners para formularios
+document.addEventListener("DOMContentLoaded", function() {
+  const editForm = document.getElementById("editStockForm");
+  if (editForm) {
+    editForm.addEventListener("submit", handleEditSubmit);
+  }
+});
+
+// Funciones globales para uso en HTML
 window.openMovementModal = openMovementModal;
 window.quickEntry = quickEntry;
-window.quickExit = quickExit;
-window.viewHistory = viewHistory;
-
-
+window.editStock = editStock;
+window.filterStock = filterStock;

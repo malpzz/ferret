@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GestiÃ³n de Clientes - Sistema FerreterÃ­a</title>
+    <title>Gestión de Clientes - Sistema Ferretería</title>
     <link rel="stylesheet" href="/css/styles.css" th:href="@{/css/styles.css}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -11,7 +11,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2><i class="fas fa-tools"></i> FerreterÃ­a</h2>
+                <h2><i class="fas fa-tools"></i> Ferretería</h2>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -32,9 +32,9 @@
 
         <main class="main-content">
             <header class="header">
-                <h1>GestiÃ³n de Clientes</h1>
+                <h1>Gestión de Clientes</h1>
                 <div class="user-menu">
-                    <span><i class="fas fa-user"></i> Admin</span>
+                    <span><i class="fas fa-user"></i> <span th:text="${#authentication?.name}">Usuario</span></span>
                     <button class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </header>
@@ -42,7 +42,7 @@
             <div class="page-content">
                 <div class="page-header">
                     <h1>Clientes</h1>
-                    <p>Administra la informaciÃ³n de tus clientes</p>
+                    <p>Administra la información de tus clientes</p>
                 </div>
 
                 <div class="content-card">
@@ -85,12 +85,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="direccion">DirecciÃ³n *</label>
+                    <label for="direccion">Dirección *</label>
                     <input type="text" id="direccion" name="direccion" class="form-control" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="telefono">TelÃ©fono *</label>
+                    <label for="telefono">Teléfono *</label>
                     <input type="tel" id="telefono" name="telefono" class="form-control" required>
                 </div>
 

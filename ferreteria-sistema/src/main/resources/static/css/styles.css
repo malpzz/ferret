@@ -605,6 +605,11 @@ body {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Modales anchos reutilizables */
+.modal-content.modal-wide {
+    max-width: 900px;
+}
+
 .modal.active .modal-content {
     transform: scale(1);
     opacity: 1;

@@ -23,6 +23,19 @@ document.addEventListener("DOMContentLoaded", async function () {
   await loadEmpleados();
   initializeHorariosPage();
   initializeDayCheckboxes();
+  
+  // Verificar si hay un empleadoId en la URL para preseleccionar
+  const urlParams = new URLSearchParams(window.location.search);
+  const empleadoId = urlParams.get('empleadoId');
+  if (empleadoId) {
+    console.log('DEBUG - Preseleccionando empleado:', empleadoId);
+    const employeeFilter = document.getElementById("employeeFilter");
+    if (employeeFilter) {
+      employeeFilter.value = empleadoId;
+      // Disparar el filtro para mostrar solo horarios de ese empleado
+      filterByEmployee();
+    }
+  }
 });
 
 function initializeHorariosPage() {
@@ -37,14 +50,8 @@ function initializeHorariosPage() {
   const form = document.getElementById("horarioForm");
   form.addEventListener("submit", handleFormSubmit);
 
-  const logoutBtn = document.querySelector(".btn-logout");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que deseas cerrar sesión?")) {
-        alert("Sesión cerrada correctamente");
-      }
-    });
-  }
+  // Initialize logout functionality
+  initializeLogout();
 
   document.getElementById("fechaInicio").value = new Date()
     .toISOString()
@@ -53,50 +60,28 @@ function initializeHorariosPage() {
   loadScheduleCalendar();
 }
 
+// Función simplificada - ya no hay checkboxes por día
 function initializeDayCheckboxes() {
-  daysOfWeek.forEach((day) => {
-    const checkbox = document.querySelector(`.day-checkbox[data-day="${day}"]`);
-    const dayScheduleDiv = document.querySelector(
-      `.day-schedule[data-day="${day}"]`
-    );
-
-    checkbox.addEventListener("change", function () {
-      const timeInputs = dayScheduleDiv.querySelectorAll('input[type="time"]');
-
-      if (this.checked) {
-        dayScheduleDiv.classList.add("active");
-        timeInputs.forEach((input) => (input.disabled = false));
-      } else {
-        dayScheduleDiv.classList.remove("active");
-        timeInputs.forEach((input) => {
-          input.disabled = true;
-          input.value = "";
-        });
-      }
-    });
-
-    const timeInputs = dayScheduleDiv.querySelectorAll('input[type="time"]');
-    timeInputs.forEach((input) => (input.disabled = true));
-  });
+  // Esta función ya no es necesaria con el formulario simplificado
 }
 
 async function loadHorarios() {
   try {
     const horarios = await apiGet('/api/horarios');
-    const empleados = await apiGet('/api/empleados');
-    const mapped = horarios.map(h => ({
-      id: h.idHorario || h.id,
-      idEmpleado: (h.empleado && (h.empleado.idEmpleado || h.empleado.id)) || h.idEmpleado,
-      nombreEmpleado: (h.empleado && h.empleado.nombreEmpleado) || '-',
-      fechaInicio: h.fecha || h.fechaInicio,
-      fechaFin: h.fechaFin || null,
-      tipoTurno: h.tipoTurno || 'completo',
-      horasSemanales: h.horasTrabajadas || null,
-      estado: 'activo',
-      observaciones: h.observaciones || ''
-    }));
-    renderHorariosTable(mapped);
+    console.log('DEBUG - Horarios recibidos del backend:', horarios);
+    
+    // Inspeccionar estructura de cada horario
+    if (horarios.length > 0) {
+      console.log('DEBUG - Primer horario completo:', JSON.stringify(horarios[0], null, 2));
+      console.log('DEBUG - ID del primer horario:', horarios[0].idHorario);
+      console.log('DEBUG - Empleado del primer horario:', horarios[0].empleado);
+    }
+    
+    // Los datos ya vienen con información del empleado desde el backend
+    window.horariosData = horarios; // Guardar para uso posterior
+    renderHorariosTable(horarios);
   } catch (e) {
+    console.error('Error cargando horarios:', e);
     showAlert(`Error cargando horarios: ${e.message}`, 'danger');
   }
 }
@@ -123,35 +108,30 @@ async function loadEmpleados() {
 
 function renderHorariosTable(horarios) {
   const columns = [
-    { key: "nombreEmpleado", label: "Empleado" },
-    {
-      key: "tipoTurno",
-      label: "Tipo de Turno",
-      format: (value) => value.charAt(0).toUpperCase() + value.slice(1),
+    { 
+      key: "empleado", 
+      label: "Empleado",
+      format: (value, item) => getEmpleadoName(item)
     },
     {
-      key: "fechaInicio",
-      label: "Fecha Inicio",
-      format: (value) => new Date(value).toLocaleDateString(),
+      key: "fecha",
+      label: "Fecha",
+      format: (value) => value ? new Date(value).toLocaleDateString() : "-",
     },
     {
-      key: "fechaFin",
-      label: "Fecha Fin",
-      format: (value) =>
-        value ? new Date(value).toLocaleDateString() : "Indefinido",
+      key: "horaEntrada",
+      label: "Hora Entrada",
+      format: (value) => value ? formatHour(value) : "-",
     },
     {
-      key: "horasSemanales",
-      label: "Horas/Semana",
-      format: (value) => (value ? `${value}h` : "N/A"),
+      key: "horaSalida", 
+      label: "Hora Salida",
+      format: (value) => value ? formatHour(value) : "-",
     },
     {
-      key: "estado",
-      label: "Estado",
-      format: (value) =>
-        `<span class="status-badge status-${value}">${
-          value.charAt(0).toUpperCase() + value.slice(1)
-        }</span>`,
+      key: "horasTrabajadas",
+      label: "Horas Trabajadas",
+      format: (value) => value ? `${value}h` : "-",
     },
   ];
 
@@ -160,25 +140,66 @@ function renderHorariosTable(horarios) {
       label: '<i class="fas fa-eye"></i>',
       class: "btn-primary",
       onclick: "viewHorario",
+      idField: "idHorario"  // Especificar el campo del ID
     },
     {
       label: '<i class="fas fa-edit"></i>',
-      class: "btn-warning",
+      class: "btn-warning", 
       onclick: "editHorario",
+      idField: "idHorario"  // Especificar el campo del ID
     },
     {
       label: '<i class="fas fa-copy"></i>',
       class: "btn-info",
       onclick: "duplicateHorario",
+      idField: "idHorario"  // Especificar el campo del ID
     },
     {
       label: '<i class="fas fa-trash"></i>',
       class: "btn-danger",
       onclick: "deleteHorario",
+      idField: "idHorario"  // Especificar el campo del ID
     },
   ];
 
+  console.log('DEBUG - Renderizando tabla con horarios:', horarios.map(h => ({
+    id: h.idHorario,
+    empleado: h.empleadoInfo || h.empleado,
+    fecha: h.fecha
+  })));
+
   renderTable("horariosTable", horarios, columns, actions);
+}
+
+function formatHour(decimalHour) {
+  if (!decimalHour) return "-";
+  const hours = Math.floor(decimalHour);
+  const minutes = Math.round((decimalHour - hours) * 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+// Función helper para obtener consistentemente el nombre del empleado
+function getEmpleadoName(horario) {
+  // Obtener el empleadoInfo del horario (puede venir como empleadoInfo o empleado)
+  const empleadoInfo = horario.empleadoInfo || horario.empleado;
+  
+  if (!empleadoInfo) {
+    return `Empleado #${horario.idEmpleado || 'N/A'}`;
+  }
+  
+  const nombre = empleadoInfo.nombreEmpleado || '';
+  const apellidos = empleadoInfo.apellidos || '';
+  
+  if (nombre && apellidos) {
+    return `${nombre} ${apellidos}`.trim();
+  } else if (nombre) {
+    return nombre.trim();
+  } else if (apellidos) {
+    return apellidos.trim();
+  } else {
+    // Si no hay nombre, usar el puesto como fallback
+    return empleadoInfo.puesto || `Empleado #${empleadoInfo.idEmpleado || horario.idEmpleado}`;
+  }
 }
 
 function filterByStatus() {
@@ -192,52 +213,49 @@ function filterByEmployee() {
 function applyFilters() {
   const status = document.getElementById("statusFilter").value;
   const employeeId = document.getElementById("employeeFilter").value;
-  const horarios = loadData("horarios");
-  const empleados = loadData("empleados");
+  
+  if (!window.horariosData) {
+    console.log('DEBUG - No hay datos de horarios cargados');
+    return;
+  }
 
-  let filteredHorarios = horarios;
+  let filteredHorarios = [...window.horariosData];
 
+  console.log('DEBUG - Aplicando filtros. Total horarios:', filteredHorarios.length);
+  console.log('DEBUG - Filtro empleado ID:', employeeId);
+  console.log('DEBUG - Filtro estado:', status);
+
+  // Filtrar por empleado
+  if (employeeId) {
+    filteredHorarios = filteredHorarios.filter(
+      (horario) => {
+        const idEmpleadoHorario = horario.idEmpleado || 
+                                 (horario.empleadoInfo ? horario.empleadoInfo.idEmpleado : null) ||
+                                 (horario.empleado ? horario.empleado.idEmpleado : null);
+        return idEmpleadoHorario == employeeId;
+      }
+    );
+    console.log('DEBUG - Después de filtrar por empleado:', filteredHorarios.length);
+  }
+
+  // Filtrar por estado (si implementas estados más adelante)
   if (status) {
     filteredHorarios = filteredHorarios.filter(
       (horario) => horario.estado === status
     );
+    console.log('DEBUG - Después de filtrar por estado:', filteredHorarios.length);
   }
 
-  if (employeeId) {
-    filteredHorarios = filteredHorarios.filter(
-      (horario) => horario.idEmpleado === employeeId
-    );
-  }
-
-  const horariosWithEmployees = filteredHorarios.map((horario) => {
-    const empleado = empleados.find((e) => e.id === horario.idEmpleado);
-    return {
-      ...horario,
-      nombreEmpleado: empleado
-        ? empleado.nombreEmpleado
-        : "Empleado no encontrado",
-    };
-  });
-
-  renderHorariosTable(horariosWithEmployees);
-  loadScheduleCalendar();
+  renderHorariosTable(filteredHorarios);
 }
 
 function loadScheduleCalendar() {
-  const employeeId = document.getElementById("employeeFilter").value;
-  const horarios = loadData("horarios");
-  const empleados = loadData("empleados");
-
-  let activeSchedules = horarios.filter((h) => h.estado === "activo");
-
-  if (employeeId) {
-    activeSchedules = activeSchedules.filter(
-      (h) => h.idEmpleado === employeeId
-    );
+  // Simplificado por ahora - el calendario semanal es complejo para la estructura actual
+  // Podemos implementarlo más adelante si es necesario
+  const calendarContainer = document.getElementById("scheduleCalendar");
+  if (calendarContainer) {
+    calendarContainer.innerHTML = '<p class="text-muted">Calendario de horarios en desarrollo</p>';
   }
-
-  const calendarHtml = generateWeeklyCalendar(activeSchedules, empleados);
-  document.getElementById("scheduleCalendar").innerHTML = calendarHtml;
 }
 
 function generateWeeklyCalendar(schedules, employees) {
@@ -312,103 +330,111 @@ function openAddModal() {
   clearForm("horarioForm");
   currentHorarioId = null;
 
-  daysOfWeek.forEach((day) => {
-    const checkbox = document.querySelector(`.day-checkbox[data-day="${day}"]`);
-    const dayScheduleDiv = document.querySelector(
-      `.day-schedule[data-day="${day}"]`
-    );
-    const timeInputs = dayScheduleDiv.querySelectorAll('input[type="time"]');
-
-    checkbox.checked = false;
-    dayScheduleDiv.classList.remove("active");
-    timeInputs.forEach((input) => {
-      input.disabled = true;
-      input.value = "";
-    });
-  });
-
   document.getElementById("fechaInicio").value = new Date()
     .toISOString()
     .split("T")[0];
-  document.getElementById("estado").value = "activo";
-  document.getElementById("tipoTurno").value = "completo";
 
   openModal("horarioModal");
 }
 
-function editHorario(id) {
-  const horario = getRecord("horarios", id);
+async function editHorario(id) {
+  // Buscar el horario en los datos cargados o en el backend
+  let horario = window.horariosData?.find(h => h.idHorario == id);
+  
   if (!horario) {
-    showAlert("Horario no encontrado", "danger");
-    return;
+    try {
+      horario = await apiGet(`/api/horarios/${id}`);
+    } catch (e) {
+      console.error('Error obteniendo horario:', e);
+      showAlert("Horario no encontrado", "danger");
+      return;
+    }
   }
 
   document.getElementById("modalTitle").textContent = "Editar Horario";
   currentHorarioId = id;
 
   const form = document.getElementById("horarioForm");
-  form.querySelector('[name="id"]').value = horario.id;
-  form.querySelector('[name="idEmpleado"]').value = horario.idEmpleado;
-  form.querySelector('[name="fechaInicio"]').value = horario.fechaInicio;
-  form.querySelector('[name="fechaFin"]').value = horario.fechaFin || "";
-  form.querySelector('[name="tipoTurno"]').value = horario.tipoTurno;
-  form.querySelector('[name="horasSemanales"]').value =
-    horario.horasSemanales || "";
-  form.querySelector('[name="estado"]').value = horario.estado;
-  form.querySelector('[name="observaciones"]').value =
-    horario.observaciones || "";
-
-  daysOfWeek.forEach((day) => {
-    const checkbox = document.querySelector(`.day-checkbox[data-day="${day}"]`);
-    const dayScheduleDiv = document.querySelector(
-      `.day-schedule[data-day="${day}"]`
-    );
-    const timeInputs = dayScheduleDiv.querySelectorAll('input[type="time"]');
-
-    if (horario.horarios && horario.horarios[day]) {
-      const dayData = horario.horarios[day];
-      checkbox.checked = true;
-      dayScheduleDiv.classList.add("active");
-
-      timeInputs.forEach((input) => (input.disabled = false));
-
-      if (dayData.entrada)
-        form.querySelector(`[name="${day}_entrada"]`).value = dayData.entrada;
-      if (dayData.salida)
-        form.querySelector(`[name="${day}_salida"]`).value = dayData.salida;
-      if (dayData.entrada_tarde)
-        form.querySelector(`[name="${day}_entrada_tarde"]`).value =
-          dayData.entrada_tarde;
-      if (dayData.salida_tarde)
-        form.querySelector(`[name="${day}_salida_tarde"]`).value =
-          dayData.salida_tarde;
-    } else {
-      checkbox.checked = false;
-      dayScheduleDiv.classList.remove("active");
-      timeInputs.forEach((input) => {
-        input.disabled = true;
-        input.value = "";
-      });
-    }
-  });
+  form.querySelector('[name="id"]').value = horario.idHorario;
+  
+  // Obtener ID del empleado desde diferentes fuentes posibles
+  const empleadoId = horario.idEmpleado || 
+                    (horario.empleadoInfo ? horario.empleadoInfo.idEmpleado : '') ||
+                    (horario.empleado ? horario.empleado.idEmpleado : '');
+  form.querySelector('[name="idEmpleado"]').value = empleadoId;
+  
+  form.querySelector('[name="fechaInicio"]').value = horario.fecha;
+  form.querySelector('[name="observaciones"]').value = horario.observaciones || "";
+  
+  // Para horarios simples - solo convertir las horas decimales a formato HH:MM
+  if (horario.horaEntrada) {
+    form.querySelector('[name="horaEntrada"]').value = decimalToTimeString(horario.horaEntrada);
+  }
+  if (horario.horaSalida) {
+    form.querySelector('[name="horaSalida"]').value = decimalToTimeString(horario.horaSalida);
+  }
 
   openModal("horarioModal");
 }
 
-function viewHorario(id) {
-  const horario = getRecord("horarios", id);
+function decimalToTimeString(decimalHour) {
+  const hours = Math.floor(decimalHour);
+  const minutes = Math.round((decimalHour - hours) * 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+async function viewHorario(id) {
+  // Buscar el horario en los datos cargados
+  let horario = window.horariosData?.find(h => h.idHorario == id);
+  
   if (!horario) {
-    showAlert("Horario no encontrado", "danger");
-    return;
+    try {
+      horario = await apiGet(`/api/horarios/${id}`);
+    } catch (e) {
+      console.error('Error obteniendo horario:', e);
+      showAlert("Horario no encontrado", "danger");
+      return;
+    }
   }
 
   currentHorarioId = id;
-  const empleados = loadData("empleados");
-  const empleado = empleados.find((e) => e.id === horario.idEmpleado);
+  // Usar empleadoInfo si está disponible, sino usar empleado
+  const empleado = horario.empleadoInfo || horario.empleado;
 
-  const detailsHtml = generateSchedulePreview(horario, empleado);
+  const detailsHtml = generateSimpleSchedulePreview(horario, empleado);
   document.getElementById("horarioDetails").innerHTML = detailsHtml;
   openModal("viewHorarioModal");
+}
+
+function generateSimpleSchedulePreview(horario, empleado) {
+  const empleadoName = getEmpleadoName(horario);
+  const empleadoInfo = horario.empleadoInfo || horario.empleado || empleado;
+  
+  return `
+    <div class="schedule-preview-container">
+      <div class="hours-summary">
+        <h4><i class="fas fa-clock"></i> Detalles del Horario</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+          <div>
+            <strong>Empleado:</strong> ${empleadoName}<br>
+            <strong>Puesto:</strong> ${empleadoInfo ? empleadoInfo.puesto || 'N/A' : 'N/A'}<br>
+            <strong>Fecha:</strong> ${new Date(horario.fecha).toLocaleDateString()}
+          </div>
+          <div>
+            <strong>Hora de Entrada:</strong> ${formatHour(horario.horaEntrada)}<br>
+            <strong>Hora de Salida:</strong> ${formatHour(horario.horaSalida)}<br>
+            <strong>Horas Trabajadas:</strong> ${horario.horasTrabajadas ? `${horario.horasTrabajadas}h` : 'N/A'}
+          </div>
+        </div>
+        ${horario.observaciones ? `
+          <div style="margin-top: 15px;">
+            <strong>Observaciones:</strong>
+            <p style="margin: 5px 0; padding: 10px; background: #f8f9fa; border-radius: 4px;">${horario.observaciones}</p>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
 }
 
 function generateSchedulePreview(horario, empleado) {
@@ -567,56 +593,113 @@ function printSchedule() {
   printWindow.print();
 }
 
-function duplicateHorario(id) {
-  const horario = getRecord("horarios", id);
+async function duplicateHorario(id) {
+  const horario = window.horariosData?.find(h => h.idHorario == id);
   if (!horario) {
     showAlert("Horario no encontrado", "danger");
     return;
   }
 
-  const empleados = loadData("empleados");
-  const empleado = empleados.find((e) => e.id === horario.idEmpleado);
-  const empleadoName = empleado ? empleado.nombreEmpleado : "empleado";
+  // Obtener el nombre del empleado usando la función helper
+  const empleadoName = getEmpleadoName(horario);
 
   if (confirm(`¿Duplicar el horario de ${empleadoName}?`)) {
-    const newHorario = {
-      ...horario,
-      id: generateId(),
-      fechaInicio: new Date().toISOString().split("T")[0],
-      fechaFin: null,
-      fechaCreacion: new Date().toISOString(),
-    };
+    try {
+      // Encontrar una fecha libre para el duplicado
+      const fechaDuplicado = await findNextAvailableDate(horario.idEmpleado);
+      
+      if (!fechaDuplicado) {
+        showAlert("No se puede duplicar: el empleado ya tiene horarios en los próximos 30 días", "warning");
+        return;
+      }
 
-    if (saveRecord("horarios", newHorario)) {
-      showAlert("Horario duplicado correctamente", "success");
-      loadHorarios();
-      loadScheduleCalendar();
-      logActivity(`Horario duplicado para: ${empleadoName}`);
-    } else {
-      showAlert("Error al duplicar el horario", "danger");
+      const newHorario = {
+        idEmpleado: horario.idEmpleado,
+        fecha: fechaDuplicado,
+        horaEntrada: horario.horaEntrada,
+        horaSalida: horario.horaSalida,
+        observaciones: `Duplicado de horario del ${new Date(horario.fecha).toLocaleDateString()}`
+      };
+
+      console.log('DEBUG - Datos del horario original:', horario);
+      console.log('DEBUG - Datos del nuevo horario a enviar:', newHorario);
+      console.log('DEBUG - Fecha libre encontrada:', fechaDuplicado);
+
+      await apiPost('/api/horarios', newHorario);
+      showAlert(`Horario duplicado correctamente para el ${new Date(fechaDuplicado).toLocaleDateString()}`, "success");
+      await loadHorarios();
+    } catch (e) {
+      console.error('Error duplicando horario:', e);
+      
+      // Mejorar mensaje de error para restricción de BD
+      if (e.message && e.message.includes('unique constraint')) {
+        showAlert("No se puede duplicar: ya existe un horario para este empleado en esa fecha", "warning");
+      } else {
+        showAlert(e.data?.mensaje || `Error al duplicar horario: ${e.message}`, 'danger');
+      }
     }
   }
 }
 
-function deleteHorario(id) {
-  const horario = getRecord("horarios", id);
+// Función para encontrar la próxima fecha disponible para un empleado
+async function findNextAvailableDate(idEmpleado) {
+  try {
+    // Obtener todos los horarios del empleado
+    const horariosEmpleado = await apiGet(`/api/horarios/empleado/${idEmpleado}`);
+    console.log('DEBUG - Horarios existentes del empleado:', horariosEmpleado);
+    
+    // Crear set de fechas ocupadas para búsqueda rápida
+    const fechasOcupadas = new Set(horariosEmpleado.map(h => h.fecha));
+    console.log('DEBUG - Fechas ocupadas:', Array.from(fechasOcupadas));
+    
+    // Empezar desde mañana
+    const hoy = new Date();
+    let fechaProbar = new Date(hoy);
+    fechaProbar.setDate(fechaProbar.getDate() + 1); // Mañana
+    
+    // Buscar en los próximos 30 días
+    for (let i = 0; i < 30; i++) {
+      const fechaString = fechaProbar.toISOString().split("T")[0];
+      console.log(`DEBUG - Probando fecha: ${fechaString}`);
+      
+      if (!fechasOcupadas.has(fechaString)) {
+        console.log(`DEBUG - Fecha libre encontrada: ${fechaString}`);
+        return fechaString;
+      }
+      
+      // Probar el siguiente día
+      fechaProbar.setDate(fechaProbar.getDate() + 1);
+    }
+    
+    console.log('DEBUG - No se encontró fecha libre en 30 días');
+    return null; // No se encontró fecha libre en 30 días
+    
+  } catch (e) {
+    console.error('Error buscando fecha disponible:', e);
+    // Si hay error obteniendo horarios, usar mañana como fallback
+    const mañana = new Date();
+    mañana.setDate(mañana.getDate() + 1);
+    return mañana.toISOString().split("T")[0];
+  }
+}
+
+async function deleteHorario(id) {
+  const horario = window.horariosData?.find(h => h.idHorario == id);
   if (!horario) {
     showAlert("Horario no encontrado", "danger");
     return;
   }
 
-  const empleados = loadData("empleados");
-  const empleado = empleados.find((e) => e.id === horario.idEmpleado);
-  const empleadoName = empleado ? empleado.nombreEmpleado : "empleado";
+  const empleadoName = getEmpleadoName(horario);
 
   if (confirm(`¿Estás seguro de eliminar el horario de ${empleadoName}?`)) {
-    if (deleteRecord("horarios", id)) {
+    try {
+      await apiDelete(`/api/horarios/${id}`);
       showAlert("Horario eliminado correctamente", "success");
-      loadHorarios();
-      loadScheduleCalendar();
-      logActivity(`Horario eliminado para: ${empleadoName}`);
-    } else {
-      showAlert("Error al eliminar el horario", "danger");
+      await loadHorarios();
+    } catch (e) {
+      console.error('Error eliminando horario:', e);
+      showAlert(e.data?.mensaje || `Error al eliminar horario: ${e.message}`, 'danger');
     }
   }
 }
@@ -626,251 +709,59 @@ async function handleFormSubmit(e) {
 
   const formData = new FormData(e.target);
 
-  const horarios = {};
-  let hasAnySchedule = false;
-
-  daysOfWeek.forEach((day) => {
-    const checkbox = document.querySelector(`.day-checkbox[data-day="${day}"]`);
-
-    if (checkbox.checked) {
-      const entrada = formData.get(`${day}_entrada`);
-      const salida = formData.get(`${day}_salida`);
-      const entrada_tarde = formData.get(`${day}_entrada_tarde`);
-      const salida_tarde = formData.get(`${day}_salida_tarde`);
-
-      if (entrada || salida || entrada_tarde || salida_tarde) {
-        horarios[day] = {
-          entrada: entrada || null,
-          salida: salida || null,
-          entrada_tarde: entrada_tarde || null,
-          salida_tarde: salida_tarde || null,
-        };
-        hasAnySchedule = true;
-      }
-    }
-  });
-
-  if (!hasAnySchedule) {
-    showAlert(
-      "Debe definir al menos un horario para un día de la semana",
-      "danger"
-    );
-    return;
+  // Convertir horas de formato HH:MM a decimal
+  function timeStringToDecimal(timeString) {
+    if (!timeString) return null;
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours + (minutes / 60);
   }
 
-  // Calculate total weekly hours if not provided
-  let calculatedHours = 0;
-  Object.values(horarios).forEach((daySchedule) => {
-    if (daySchedule.entrada && daySchedule.salida) {
-      calculatedHours += calculateHoursDifference(
-        daySchedule.entrada,
-        daySchedule.salida
-      );
-    }
-    if (daySchedule.entrada_tarde && daySchedule.salida_tarde) {
-      calculatedHours += calculateHoursDifference(
-        daySchedule.entrada_tarde,
-        daySchedule.salida_tarde
-      );
-    }
-  });
-
   const horarioData = {
-    idEmpleado: formData.get("idEmpleado"),
-    fechaInicio: formData.get("fechaInicio"),
-    fechaFin: formData.get("fechaFin") || null,
-    tipoTurno: formData.get("tipoTurno"),
-    horasSemanales:
-      parseFloat(formData.get("horasSemanales")) || calculatedHours,
-    estado: formData.get("estado"),
-    observaciones: formData.get("observaciones").trim(),
-    horarios: horarios,
+    idEmpleado: parseInt(formData.get("idEmpleado")),
+    fecha: formData.get("fechaInicio"),
+    horaEntrada: timeStringToDecimal(formData.get("horaEntrada")),
+    horaSalida: timeStringToDecimal(formData.get("horaSalida")),
+    observaciones: formData.get("observaciones")?.trim() || null
   };
 
-  // Validation
-  if (
-    !horarioData.idEmpleado ||
-    !horarioData.fechaInicio ||
-    !horarioData.tipoTurno
-  ) {
+  console.log('DEBUG - Datos del horario a enviar:', horarioData);
+  console.log('DEBUG - Tipos de datos en formulario:', {
+    idEmpleado: typeof horarioData.idEmpleado,
+    fecha: typeof horarioData.fecha,
+    horaEntrada: typeof horarioData.horaEntrada,
+    horaSalida: typeof horarioData.horaSalida,
+    observaciones: typeof horarioData.observaciones
+  });
+
+  // Validación básica
+  if (!horarioData.idEmpleado || !horarioData.fecha || !horarioData.horaEntrada || !horarioData.horaSalida) {
     showAlert("Complete todos los campos obligatorios", "danger");
     return;
   }
 
-  // Validate date range
-  if (horarioData.fechaFin) {
-    const startDate = new Date(horarioData.fechaInicio);
-    const endDate = new Date(horarioData.fechaFin);
-
-    if (endDate <= startDate) {
-      showAlert(
-        "La fecha de fin debe ser posterior a la fecha de inicio",
-        "danger"
-      );
-      return;
-    }
-  }
-
-  // Check for overlapping schedules for the same employee
-  const existingSchedules = [];
-  const employeeSchedules = [];
-
-  const hasOverlap = employeeSchedules.some((existing) => {
-    const existingStart = new Date(existing.fechaInicio);
-    const existingEnd = existing.fechaFin
-      ? new Date(existing.fechaFin)
-      : new Date("2099-12-31");
-    const newStart = new Date(horarioData.fechaInicio);
-    const newEnd = horarioData.fechaFin
-      ? new Date(horarioData.fechaFin)
-      : new Date("2099-12-31");
-
-    return newStart <= existingEnd && newEnd >= existingStart;
-  });
-
-  if (hasOverlap) {
-    showAlert(
-      "Ya existe un horario activo para este empleado que se superpone con las fechas indicadas",
-      "danger"
-    );
+  if (horarioData.horaSalida <= horarioData.horaEntrada) {
+    showAlert("La hora de salida debe ser posterior a la hora de entrada", "danger");
     return;
   }
 
   try {
-    const payload = {
-      idEmpleado: parseInt(horarioData.idEmpleado),
-      fecha: horarioData.fechaInicio,
-      horaEntrada: 8.0,
-      horaSalida: 17.0,
-      observaciones: horarioData.observaciones || ''
-    };
     if (currentHorarioId) {
-      await apiPut(`/api/horarios/${currentHorarioId}`, payload);
+      await apiPut(`/api/horarios/${currentHorarioId}`, horarioData);
       showAlert("Horario actualizado correctamente", "success");
     } else {
-      await apiPost('/api/horarios', payload);
+      await apiPost('/api/horarios', horarioData);
       showAlert("Horario creado correctamente", "success");
     }
     closeModal("horarioModal");
     await loadHorarios();
-    loadScheduleCalendar();
   } catch (e) {
+    console.error('Error guardando horario:', e);
     showAlert(e.data?.mensaje || `Error al guardar horario: ${e.message}`, 'danger');
   }
 }
 
-function initializeSampleHorarios() {
-  const horarios = loadData("horarios");
-  if (horarios.length === 0) {
-    const empleados = loadData("empleados");
-
-    if (empleados.length > 0) {
-      const sampleHorarios = [
-        {
-          id: "1",
-          idEmpleado: empleados[0].id,
-          fechaInicio: "2024-01-01",
-          fechaFin: null,
-          tipoTurno: "completo",
-          horasSemanales: 40,
-          estado: "activo",
-          observaciones: "Horario estándar de tiempo completo",
-          horarios: {
-            lunes: {
-              entrada: "08:00",
-              salida: "17:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            martes: {
-              entrada: "08:00",
-              salida: "17:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            miercoles: {
-              entrada: "08:00",
-              salida: "17:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            jueves: {
-              entrada: "08:00",
-              salida: "17:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            viernes: {
-              entrada: "08:00",
-              salida: "17:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-          },
-          fechaCreacion: new Date().toISOString(),
-        },
-      ];
-
-      if (empleados.length > 1) {
-        sampleHorarios.push({
-          id: "2",
-          idEmpleado: empleados[1].id,
-          fechaInicio: "2024-01-01",
-          fechaFin: null,
-          tipoTurno: "parcial",
-          horasSemanales: 24,
-          estado: "activo",
-          observaciones: "Horario de medio tiempo - mañanas",
-          horarios: {
-            lunes: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            martes: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            miercoles: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            jueves: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            viernes: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-            sabado: {
-              entrada: "08:00",
-              salida: "12:00",
-              entrada_tarde: null,
-              salida_tarde: null,
-            },
-          },
-          fechaCreacion: new Date().toISOString(),
-        });
-      }
-
-      saveData("horarios", sampleHorarios);
-    }
-  }
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  setTimeout(initializeSampleHorarios, 500);
-});
+// Funcionalidad de horarios completamente integrada con el backend
+// Ya no se necesitan datos de muestra en localStorage
 
 window.openAddModal = openAddModal;
 window.editHorario = editHorario;

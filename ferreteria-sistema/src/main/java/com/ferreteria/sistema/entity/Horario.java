@@ -2,6 +2,8 @@ package com.ferreteria.sistema.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,6 +26,7 @@ public class Horario {
 
     @NotNull(message = "La fecha es obligatoria")
     @Column(name = "FECHA", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fecha;
 
     @NotNull(message = "La hora de entrada es obligatoria")
@@ -42,12 +45,13 @@ public class Horario {
     @Column(name = "OBSERVACIONES", length = 200)
     private String observaciones;
 
-    @Column(name = "FECHA_CREACION", nullable = false, updatable = false)
+    @Column(name = "FECHA_CREACION", insertable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
     // Relación muchos a uno con empleado
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "IDEMPLEADO", nullable = false)
+    @JsonIgnore
     private Empleado empleado;
 
     // Columna calculada en BD (no actualizable)
@@ -56,7 +60,7 @@ public class Horario {
 
     // Constructor por defecto
     public Horario() {
-        this.fechaCreacion = LocalDateTime.now();
+        // fechaCreacion se maneja automáticamente por la BD o no se incluye en INSERT
     }
 
     // Constructor con parámetros básicos
@@ -199,6 +203,42 @@ public class Horario {
                !horaEntrada.equals(horaSalida) &&
                horaEntrada.compareTo(BigDecimal.valueOf(24)) < 0 &&
                horaSalida.compareTo(BigDecimal.valueOf(24)) < 0;
+    }
+
+    // Métodos para obtener información del empleado sin problemas de lazy loading
+    public Long getIdEmpleadoSafe() {
+        return empleado != null ? empleado.getIdEmpleado() : null;
+    }
+
+    public String getNombreEmpleadoSafe() {
+        return empleado != null ? empleado.getNombreEmpleado() : null;
+    }
+
+    public EmpleadoInfo getEmpleadoInfo() {
+        if (empleado == null) return null;
+        return new EmpleadoInfo(empleado.getIdEmpleado(), empleado.getNombreEmpleado(), 
+                               empleado.getApellidos(), empleado.getPuesto());
+    }
+
+    // Clase interna para serializar información básica del empleado
+    public static class EmpleadoInfo {
+        private Long idEmpleado;
+        private String nombreEmpleado;
+        private String apellidos;
+        private String puesto;
+
+        public EmpleadoInfo(Long idEmpleado, String nombreEmpleado, String apellidos, String puesto) {
+            this.idEmpleado = idEmpleado;
+            this.nombreEmpleado = nombreEmpleado;
+            this.apellidos = apellidos;
+            this.puesto = puesto;
+        }
+
+        // Getters
+        public Long getIdEmpleado() { return idEmpleado; }
+        public String getNombreEmpleado() { return nombreEmpleado; }
+        public String getApellidos() { return apellidos; }
+        public String getPuesto() { return puesto; }
     }
 
     // Métodos equals, hashCode y toString
