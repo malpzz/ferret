@@ -66,78 +66,59 @@ function openAddModal() {
   openModal("proveedorModal");
 }
 
-function editProveedor(id) {
-  const proveedor = getRecord("proveedores", id);
-  if (!proveedor) {
-    showAlert("Proveedor no encontrado", "danger");
-    return;
+async function editProveedor(id) {
+  try {
+    const proveedor = await apiGet(`/api/proveedores/${id}`);
+
+    document.getElementById("modalTitle").textContent = "Editar Proveedor";
+    currentProveedorId = id;
+
+    const form = document.getElementById("proveedorForm");
+    if (form.querySelector('[name="id"]')) {
+      form.querySelector('[name="id"]').value = proveedor.idProveedor || proveedor.id || id;
+    }
+    form.querySelector('[name="nombreProveedor"]').value = proveedor.nombreProveedor || '';
+    form.querySelector('[name="direccion"]').value = proveedor.direccion || '';
+    form.querySelector('[name="telefono"]').value = proveedor.telefono || '';
+    form.querySelector('[name="email"]').value = proveedor.email || '';
+
+    openModal("proveedorModal");
+  } catch (e) {
+    showAlert(e.status === 404 ? "Proveedor no encontrado" : `Error cargando proveedor: ${e.message}`, "danger");
   }
-
-  document.getElementById("modalTitle").textContent = "Editar Proveedor";
-  currentProveedorId = id;
-
-  const form = document.getElementById("proveedorForm");
-  form.querySelector('[name="id"]').value = proveedor.id;
-  form.querySelector('[name="nombreProveedor"]').value =
-    proveedor.nombreProveedor;
-  form.querySelector('[name="direccion"]').value = proveedor.direccion;
-  form.querySelector('[name="telefono"]').value = proveedor.telefono;
-  form.querySelector('[name="email"]').value = proveedor.email;
-
-  openModal("proveedorModal");
 }
 
-function viewProveedor(id) {
-  const proveedor = getRecord("proveedores", id);
-  if (!proveedor) {
-    showAlert("Proveedor no encontrado", "danger");
-    return;
-  }
+async function viewProveedor(id) {
+  try {
+    const proveedor = await apiGet(`/api/proveedores/${id}`);
+    currentProveedorId = id;
 
-  currentProveedorId = id;
-
-  const pedidos = loadData("pedidos");
-  const proveedorPedidos = pedidos.filter((p) => p.idProveedor === id);
-
-  const detailsHtml = `
+    const detailsHtml = `
         <div class="proveedor-details">
             <div class="detail-row">
-                <strong>Empresa:</strong> ${proveedor.nombreProveedor}
+                <strong>Empresa:</strong> ${proveedor.nombreProveedor || '-'}
             </div>
             <div class="detail-row">
-                <strong>Dirección:</strong> ${proveedor.direccion}
+                <strong>Dirección:</strong> ${proveedor.direccion || '-'}
             </div>
             <div class="detail-row">
-                <strong>Teléfono:</strong> ${proveedor.telefono}
+                <strong>Teléfono:</strong> ${proveedor.telefono || '-'}
             </div>
             <div class="detail-row">
-                <strong>Email:</strong> ${proveedor.email}
-            </div>
-            <div class="detail-row">
-                <strong>Pedidos Realizados:</strong>
-                <span class="badge-info">${proveedorPedidos.length} pedidos</span>
+                <strong>Email:</strong> ${proveedor.email || '-'}
             </div>
         </div>
         <style>
-            .proveedor-details .detail-row {
-                padding: 10px 0;
-                border-bottom: 1px solid #e1e8ed;
-            }
-            .proveedor-details .detail-row:last-child {
-                border-bottom: none;
-            }
-            .badge-info {
-                background: #17a2b8;
-                color: white;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 0.8rem;
-            }
+            .proveedor-details .detail-row { padding: 10px 0; border-bottom: 1px solid #e1e8ed; }
+            .proveedor-details .detail-row:last-child { border-bottom: none; }
         </style>
     `;
 
-  document.getElementById("proveedorDetails").innerHTML = detailsHtml;
-  openModal("viewProveedorModal");
+    document.getElementById("proveedorDetails").innerHTML = detailsHtml;
+    openModal("viewProveedorModal");
+  } catch (e) {
+    showAlert(e.status === 404 ? "Proveedor no encontrado" : `Error cargando proveedor: ${e.message}`, "danger");
+  }
 }
 
 function editFromView() {

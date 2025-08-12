@@ -77,7 +77,6 @@ public class ClienteSpDao {
                             new SqlParameter("P_ID", Types.NUMERIC)
                     )
                     .returningResultSet("RETURN_VALUE", clienteRowMapper());
-
             MapSqlParameterSource in = new MapSqlParameterSource().addValue("P_ID", id, Types.NUMERIC);
             Map<String, Object> out = call.execute(in);
             @SuppressWarnings("unchecked")

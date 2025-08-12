@@ -48,8 +48,8 @@ public class ProveedorSpDao {
 
     public Optional<Proveedor> obtenerPorId(Long id) {
         SimpleJdbcCall call = new SimpleJdbcCall(jdbcTemplate)
-                .withCatalogName("PKG_FERRETERIA").withFunctionName("FN_OBTENER_PROVEEDOR")
-                .withoutProcedureColumnMetaDataAccess()
+                .withCatalogName("PKG_FERRETERIA")
+                .withFunctionName("FN_OBTENER_PROVEEDOR")
                 .declareParameters(new SqlParameter("P_ID", Types.NUMERIC))
                 .returningResultSet("RETURN_VALUE", mapper());
         Map<String, Object> out = call.execute(new MapSqlParameterSource().addValue("P_ID", id));

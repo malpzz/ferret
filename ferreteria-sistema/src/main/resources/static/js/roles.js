@@ -45,16 +45,19 @@ function renderRolesTable(roles) {
       label: '<i class="fas fa-eye"></i>',
       class: "btn-primary",
       onclick: "viewRol",
+      idField: 'idRol',
     },
     {
       label: '<i class="fas fa-edit"></i>',
       class: "btn-warning",
       onclick: "editRol",
+      idField: 'idRol',
     },
     {
       label: '<i class="fas fa-trash"></i>',
       class: "btn-danger",
       onclick: "deleteRol",
+      idField: 'idRol',
     },
   ];
 

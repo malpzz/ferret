@@ -17,42 +17,54 @@ function initializeDashboard() {
   initializeLogout();
 }
 
-function loadStats() {
-  const stats = getStatsFromStorage();
+async function loadStats() {
+  const stats = await getStatsFromApi();
+  const elClientes = document.getElementById("totalClientes");
+  const elProductos = document.getElementById("totalProductos");
+  const elFacturas = document.getElementById("totalFacturas");
+  const elVentas = document.getElementById("ventasTotal");
 
-  document.getElementById("totalClientes").textContent = stats.clientes;
-  document.getElementById("totalProductos").textContent = stats.productos;
-  document.getElementById("totalFacturas").textContent = stats.facturas;
-  document.getElementById("ventasTotal").textContent = formatCurrency(
-    stats.ventas
-  );
+  if (elClientes) elClientes.textContent = stats.clientes;
+  if (elProductos) elProductos.textContent = stats.productos;
+  if (elFacturas) elFacturas.textContent = stats.facturas;
+  if (elVentas) elVentas.textContent = formatCurrency(stats.ventas);
 
   animateCounters();
 }
 
-function getStatsFromStorage() {
-  const clientes = JSON.parse(localStorage.getItem("clientes") || "[]");
-  const productos = JSON.parse(localStorage.getItem("productos") || "[]");
-  const facturas = JSON.parse(localStorage.getItem("facturas") || "[]");
+async function getStatsFromApi() {
+  try {
+    const [clientes, productos, facturas] = await Promise.all([
+      apiGet('/api/clientes').catch(() => []),
+      apiGet('/api/productos').catch(() => []),
+      apiGet('/api/facturas').catch(() => []),
+    ]);
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const monthlyFacturas = facturas.filter((f) => {
-    const facturaDate = new Date(f.fecha);
-    return (
-      facturaDate.getMonth() === currentMonth &&
-      facturaDate.getFullYear() === currentYear
-    );
-  });
+    const now = new Date();
+    const m = now.getMonth();
+    const y = now.getFullYear();
 
-  const totalVentas = monthlyFacturas.reduce((sum, f) => sum + f.total, 0);
+    const monthlyFacturas = (Array.isArray(facturas) ? facturas : []).filter((f) => {
+      if (!f.fecha) return false;
+      const d = new Date(f.fecha);
+      return d.getMonth() === m && d.getFullYear() === y;
+    });
 
-  return {
-    clientes: clientes.length,
-    productos: productos.length,
-    facturas: monthlyFacturas.length,
-    ventas: totalVentas,
-  };
+    const totalVentas = monthlyFacturas.reduce((sum, f) => {
+      const estadoOk = !f.estado || String(f.estado).toUpperCase() === 'PAGADA';
+      const total = Number(f.total || 0);
+      return sum + (estadoOk ? total : 0);
+    }, 0);
+
+    return {
+      clientes: Array.isArray(clientes) ? clientes.length : 0,
+      productos: Array.isArray(productos) ? productos.length : 0,
+      facturas: monthlyFacturas.length,
+      ventas: totalVentas,
+    };
+  } catch (_e) {
+    return { clientes: 0, productos: 0, facturas: 0, ventas: 0 };
+  }
 }
 
 function formatCurrency(amount) {
